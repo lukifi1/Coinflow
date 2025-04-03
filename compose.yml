@@ -1,0 +1,16 @@
+networks:
+  coinflow-network:
+    name: coinflow-network
+    driver: bridge
+
+services:
+  coinflow-server:
+     container_name: coinflow-server
+     build: .
+     image: coinflow-server:latest
+     restart: always
+     ports:
+       - 8080:8080
+     networks:
+       - coinflow-network
+
