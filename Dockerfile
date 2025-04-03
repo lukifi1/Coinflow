@@ -1,15 +1,12 @@
 FROM node:23
 
-RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
+RUN mkdir -p /opt/app/node_modules
 
-WORKDIR /home/node/app
+WORKDIR /opt/app
 COPY package*.json ./
-
-USER node
+COPY app.js ./
 
 RUN npm install
-
-COPY --chown=node:node . .
 
 EXPOSE 8080
 
