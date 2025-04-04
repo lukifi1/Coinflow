@@ -8,6 +8,8 @@ COPY app.js ./
 
 RUN npm install
 
+COPY ./www ./www
+
 EXPOSE 8080
 
 CMD ["node", "app.js"]
