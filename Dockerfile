@@ -4,7 +4,7 @@ RUN mkdir -p /opt/app/node_modules
 
 WORKDIR /opt/app
 COPY package*.json ./
-COPY app.js ./
+COPY server.js ./
 
 RUN npm install
 
@@ -12,4 +12,4 @@ COPY ./www ./www
 
 EXPOSE 8080
 
-CMD ["node", "app.js"]
+CMD ["node", "server.js"]
