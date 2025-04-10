@@ -11,6 +11,7 @@ COPY app.js ./
 RUN npm install
 RUN npm install express
 RUN npm install dotenv
+RUN npm install pg
 
 COPY ./www ./www
 
