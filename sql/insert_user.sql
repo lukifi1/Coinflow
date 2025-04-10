@@ -1,0 +1,20 @@
+CREATE OR REPLACE FUNCTION public.insert_user(in_username text, in_email text, password_hash text) RETURNS uuid
+	LANGUAGE plpgsql STRICT
+	AS $$
+DECLARE
+	temp_uuid uuid;
+BEGIN
+	PERFORM * FROM users u
+	WHERE u.username = in_username OR u.email = in_email;
+
+    IF FOUND THEN
+		RAISE EXCEPTION 'User already exists';
+    END IF;
+
+	INSERT INTO users VALUES (gen_random_uuid(), in_username, in_email, password_hash);
+
+	SELECT uuid INTO temp_uuid FROM users u WHERE u.username = in_username AND u.email = in_email;
+	
+	RETURN temp_uuid;
+END;
+$$;
