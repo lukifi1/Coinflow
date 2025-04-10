@@ -11,6 +11,16 @@ BEGIN
 		RAISE EXCEPTION 'User already exists';
     END IF;
 
+	-- Limit username
+	IF NOT regexp_like(in_username, '^[\w]+$') THEN
+		RAISE EXCEPTION 'Username is invalid';
+	END IF;
+
+	-- Limit email (https://regex101.com/r/lHs2R3/1)
+	IF NOT regexp_like(in_email, '^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$') THEN
+		RAISE EXCEPTION 'Email is invalid';
+	END IF;
+
 	INSERT INTO users VALUES (gen_random_uuid(), in_username, in_email, password_hash);
 
 	SELECT uuid INTO temp_uuid FROM users u WHERE u.username = in_username AND u.email = in_email;
