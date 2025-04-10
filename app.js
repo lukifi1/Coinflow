@@ -3,6 +3,7 @@ import path from "path";
 import 'dotenv/config'
 import pg from 'pg'
 
+// Documentation from pg: https://node-postgres.com/apis/pool
 const { Pool } = pg
 const pool = new Pool({
     host: 'coinflow_postgres',
@@ -10,9 +11,6 @@ const pool = new Pool({
     password: process.env.POSTGRES_PASSWORD,
     database: process.env.POSTGRES_DB,
     port: 5432,
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
 })
 
 // const result = await pool.query('SELECT $1::text as name', ['toast'])
