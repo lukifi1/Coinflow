@@ -55,3 +55,9 @@ services:
     networks:
       - coinflow_internal
       - coinflow_external
+    healthcheck:
+      test: ["CMD-SHELL", "wget -O - http://localhost:80/misc/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
