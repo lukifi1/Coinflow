@@ -5,7 +5,7 @@ RUN mkdir -p /opt/app/node_modules
 WORKDIR /opt/app
 COPY package*.json ./
 COPY .env ./
-# COPY server.js ./
+COPY server.js ./
 COPY app.js ./
 
 RUN npm install
@@ -17,5 +17,8 @@ COPY ./www ./www
 
 EXPOSE 8080
 
-# CMD ["node", "server.js"]
-CMD ["node", "app.js"]
+# https://docs.docker.com/reference/dockerfile/#healthcheck
+HEALTHCHECK --interval=10s --timeout=3s \
+  CMD curl -f http://localhost:8080/api/healthcheck || exit 1
+
+CMD npm start
