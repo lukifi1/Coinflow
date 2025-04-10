@@ -13,9 +13,6 @@ const pool = new Pool({
     port: 5432,
 })
 
-// const result = await pool.query('SELECT $1::text as name', ['toast'])
-// console.log(result.rows[0].name)
-
 const app = express()
 
 app.use(express.static('www'))
@@ -39,8 +36,14 @@ app.get('/api', (req, res) => {
     })
 })
 
+// Basic check if connecting to db works
+app.get('/api/test_db', async (req, res) => {
+    const result = await pool.query('SELECT $1::text as name', ['Works'])
+    res.send(result.rows[0].name)
+})
+
 // Fetch user info from db as json
-app.get('/api/user/:guid', (req, res) => {
+app.get('/api/user/:guid', async (req, res) => {
     const filePath = path.join(process.cwd(), 'www/404.html')
     res.sendFile(filePath, (err) => {
         if (err) {
