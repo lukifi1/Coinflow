@@ -1,7 +1,5 @@
 FROM node:23
 
-RUN mkdir -p /opt/app/node_modules
-
 WORKDIR /opt/app
 COPY package*.json ./
 COPY .env ./
