@@ -17,6 +17,10 @@ services:
         read_only: true
         source: ./www
         target: /opt/app/www
+      - type: bind
+        read_only: true
+        source: ./internal
+        target: /opt/app/internal
     ports:
       - 8080:8080
     networks:
