@@ -19,17 +19,13 @@ app.use(express.static("www"))
 
 // Landing/Main Page
 // Takes in no arguments
-// Returns an HTML file
+// Returns an HTML file or error as json
 // TODO: Check if user is logged in and either display the landing or main page
 app.get("/", (req, res) => {
     const filePath = path.join(process.cwd(), "www/index.html")
     res.sendFile(filePath, (error) => {
         if (error) {
-            if (error.statusCode == 404) {
-                res.status(error.statusCode).sendFile(path.join(process.cwd(), "internal/404.html"))
-            } else {
-                res.status(error.statusCode).json({ error })
-            }
+            res.status(error.statusCode).json({ error })
         }
     })
 })
@@ -38,11 +34,7 @@ app.get("/api", (req, res) => {
     const filePath = path.join(process.cwd(), "internal/api.html")
     res.sendFile(filePath, (error) => {
         if (error) {
-            if (error.statusCode == 404) {
-                res.status(error.statusCode).sendFile(path.join(process.cwd(), "internal/404.html"))
-            } else {
-                res.status(error.statusCode).json({ error })
-            }
+            res.status(error.statusCode).json({ error })
         }
     })
 })
@@ -63,7 +55,7 @@ app.get("/api/user/:uuid", async (req, res) => {
     // This Expression only works for UUIDv4, which is the version prostgresql uses
     const regex = new RegExp(/^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/, "i")
     if (!regex.test(req.params.uuid)) {
-        res.status(400).end()
+        res.status(400).json({ })
         return
     }
 
