@@ -34,9 +34,6 @@ app.get("/", (req, res) => {
     })
 })
 
-// API Spec
-// Takes in no arguments
-// Returns an HTML file
 app.get("/api", (req, res) => {
     const filePath = path.join(process.cwd(), "internal/api.html")
     res.sendFile(filePath, (error) => {
@@ -50,9 +47,6 @@ app.get("/api", (req, res) => {
     })
 })
 
-// Healthcheck for docker and for whoever wants it
-// Takes in no arguments
-// Returns "Works" on success and a json on error
 app.get("/api/healthcheck", async (req, res) => {
     pool.query("SELECT $1::text as name", ["Works"])
         .then((result) => {
@@ -63,10 +57,6 @@ app.get("/api/healthcheck", async (req, res) => {
         })
 })
 
-// Fetch user info from db as json
-// Takes in a UUID in the URI
-// Returns HTTP code 400 if uuid is not a valid UUID
-// Returns username, email and password_hash as json or error as json
 app.get("/api/user/:uuid", async (req, res) => {
     // Helpful documentation https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions
     // Where I got the expression from https://stackoverflow.com/a/38191104

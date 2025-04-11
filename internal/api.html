@@ -6,5 +6,31 @@
   </head>
   <body>
     <h1>API specification for Coinflow</h1>
+
+    <h2>User Stuff</h2>
+    <h3>GET /api/user/:uuid</h3>
+    <p>
+      Fetch user info from db as json<br>
+      Takes in a UUID in the URI<br>
+      Returns username, email and password_hash as json<br>
+      Returns HTTP code 400 if uuid is not a valid UUID<br>
+      Returns other errors as json
+    </p>
+
+    <h2>Misc</h2>
+    <h3>GET /api</h3>
+    <p>
+      API specification (the document you are looking at right now)<br>
+      Takes in no arguments<br>
+      Returns HTML on success<br>
+      Returns HTML on 404 or a json on other errors
+    </p>
+
+    <h3>GET /api/healthcheck</h3>
+    <p>
+      Healthcheck for docker and for whoever wants it<br>
+      Takes in no arguments<br>
+      Returns "Works" on success and a json on error
+    </p>
   </body>
 </html>
