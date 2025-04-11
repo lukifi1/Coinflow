@@ -39,7 +39,7 @@ app.get("/api", (req, res) => {
     })
 })
 
-app.get("/api/healthcheck", async (req, res) => {
+app.get("/api/healthcheck", (req, res) => {
     pool.query("SELECT $1::text as name", ["Works"])
         .then((result) => {
             res.send(result)
@@ -49,7 +49,17 @@ app.get("/api/healthcheck", async (req, res) => {
         })
 })
 
-app.get("/api/user/:uuid", async (req, res) => {
+app.get("/api/user", (req, res) => {
+    pool.query("SELECT uuid FROM users")
+        .then((result) => {
+            res.send(result.rows)
+        })
+        .catch((error) => {
+            res.status(500).json({ error })
+        })
+})
+
+app.get("/api/user/:uuid", (req, res) => {
     // Helpful documentation https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions
     // Where I got the expression from https://stackoverflow.com/a/38191104
     // This Expression only works for UUIDv4, which is the version prostgresql uses
