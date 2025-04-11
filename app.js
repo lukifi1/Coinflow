@@ -17,26 +17,42 @@ const app = express()
 
 app.use(express.static("www"))
 
+// Landing/Main Page
+// Takes in no arguments
+// Returns an HTML file
+// TODO: Check if user is logged in and either display the landing or main page
 app.get("/", (req, res) => {
     const filePath = path.join(process.cwd(), "www/index.html")
-    res.sendFile(filePath, (err) => {
-        if (err) {
-            next(err)
+    res.sendFile(filePath, (error) => {
+        if (error) {
+            if (error.statusCode == 404) {
+                res.status(error.statusCode).sendFile(path.join(process.cwd(), "internal/404.html"))
+            } else {
+                res.status(error.statusCode).json({ error })
+            }
         }
     })
 })
 
-// API Spec as html
+// API Spec
+// Takes in no arguments
+// Returns an HTML file
 app.get("/api", (req, res) => {
-    const filePath = path.join(process.cwd(), "www/404.html")
-    res.sendFile(filePath, (err) => {
-        if (err) {
-            next(err)
+    const filePath = path.join(process.cwd(), "internal/api.html")
+    res.sendFile(filePath, (error) => {
+        if (error) {
+            if (error.statusCode == 404) {
+                res.status(error.statusCode).sendFile(path.join(process.cwd(), "internal/404.html"))
+            } else {
+                res.status(error.statusCode).json({ error })
+            }
         }
     })
 })
 
 // Healthcheck for docker and for whoever wants it
+// Takes in no arguments
+// Returns "Works" on success and a json on error
 app.get("/api/healthcheck", async (req, res) => {
     pool.query("SELECT $1::text as name", ["Works"])
         .then((result) => {
@@ -48,6 +64,9 @@ app.get("/api/healthcheck", async (req, res) => {
 })
 
 // Fetch user info from db as json
+// Takes in a UUID in the URI
+// Returns HTTP code 400 if uuid is not a valid UUID
+// Returns username, email and password_hash as json or error as json
 app.get("/api/user/:uuid", async (req, res) => {
     // Helpful documentation https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions
     // Where I got the expression from https://stackoverflow.com/a/38191104

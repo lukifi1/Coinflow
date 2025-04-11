@@ -14,6 +14,7 @@ RUN npm install dotenv
 RUN npm install pg
 
 COPY ./www ./www
+COPY ./internal ./internal
 
 EXPOSE 8080
 
