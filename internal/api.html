@@ -10,7 +10,7 @@
     <h2>User Stuff</h2>
     <h3>GET /api/user</h3>
     <p>
-      This is currently usable by everyone, but will require need authentication
+      This is currently usable by everyone, but will require need authentication<br>
       Fetch UUID of all users<br>
       Takes in no arguments<br>
       Returns uuid as json<br>
@@ -22,6 +22,14 @@
       Fetch user info from db as json<br>
       Takes in a UUID in the URI<br>
       Returns username, email and password_hash as json<br>
+      Returns errors as json
+    </p>
+    
+    <h3>POST /api/user/new</h3>
+    <p>
+      Add new user to database<br>
+      Takes username, email and password_hash as json in the body<br>
+      Returns a UUID as json<br>
       Returns errors as json
     </p>
 

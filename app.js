@@ -16,6 +16,7 @@ const pool = new Pool({
 const app = express()
 
 app.use(express.static("www"))
+app.use(express.json())
 
 // Landing/Main Page
 // Takes in no arguments
@@ -69,9 +70,29 @@ app.get("/api/user/:uuid", (req, res) => {
         return
     }
 
-    pool.query("SELECT * FROM get_user($1::uuid)", [req.params.uuid])
+    pool.query("SELECT * FROM get_user($1)", [req.params.uuid])
         .then((result) => {
             res.send(result.rows[0])
+        })
+        .catch((error) => {
+            res.status(500).json({ error })
+        })
+})
+
+app.post("/api/user/new", (req, res) => {
+    if (!req.body) {
+        res.status(400).json({ message: "bruh, I need me some json" })
+        return
+    }
+    
+    if (!req.body.username || !req.body.email || !req.body.password_hash) {
+        res.status(400).json({ message: "bruh, this shit wrong" })
+        return
+    }
+    
+    pool.query("SELECT * FROM insert_user($1, $2, $3)", [req.body.username, req.body.email, req.body.password_hash])
+        .then((result) => {
+            res.json({ uuid: result.rows[0].insert_user })
         })
         .catch((error) => {
             res.status(500).json({ error })
