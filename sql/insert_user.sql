@@ -21,10 +21,7 @@ BEGIN
 		RAISE EXCEPTION 'Email is invalid';
 	END IF;
 
-	INSERT INTO users VALUES (gen_random_uuid(), in_username, in_email, password_hash);
-
-	SELECT uuid INTO temp_uuid FROM users u WHERE u.username = in_username AND u.email = in_email;
-	
+	INSERT INTO users VALUES (gen_random_uuid(), in_username, in_email, password_hash) RETURNING uuid INTO temp_uuid;
 	RETURN temp_uuid;
 END;
 $$;

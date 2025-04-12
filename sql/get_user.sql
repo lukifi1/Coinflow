@@ -1,4 +1,3 @@
--- DROP FUNCTION get_user(uuid);
 CREATE OR REPLACE FUNCTION public.get_user(in_uuid uuid) RETURNS TABLE (username text, email text, password_hash text)
 	LANGUAGE plpgsql STRICT
 	AS $$
