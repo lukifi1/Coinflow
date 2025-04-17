@@ -1,0 +1,116 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: #f5f7fa;
+    color: #2c3e50;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+.terms-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    padding: 40px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 20px;
+}
+
+.logo h1 {
+    color: #2c3e50;
+    font-size: 28px;
+}
+
+.logo span {
+    color: #3498db;
+}
+
+.logo p {
+    color: #7f8c8d;
+    margin-top: 5px;
+    font-size: 18px;
+}
+
+.updated-date {
+    color: #95a5a6;
+    font-size: 14px;
+}
+
+.terms-content {
+    margin-bottom: 40px;
+}
+
+section {
+    margin-bottom: 30px;
+}
+
+h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+p, ul {
+    margin-bottom: 15px;
+    color: #34495e;
+}
+
+ul {
+    padding-left: 20px;
+}
+
+li {
+    margin-bottom: 8px;
+}
+
+.back-to-app {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.back-to-app a {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background-color 0.3s;
+}
+
+.back-to-app a:hover {
+    background-color: #2980b9;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .terms-container {
+        padding: 25px;
+    }
+    
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .updated-date {
+        margin-top: 10px;
+    }
+}
