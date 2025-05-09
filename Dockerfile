@@ -3,7 +3,6 @@ FROM node:23
 WORKDIR /opt/app
 COPY package*.json ./
 COPY .env ./
-COPY server.js ./
 COPY app.js ./
 
 RUN npm install
