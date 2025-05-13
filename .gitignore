@@ -1,1 +1,4 @@
 node_modules
+
+# Something stupid from apple
+.DS_Store
