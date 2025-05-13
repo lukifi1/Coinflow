@@ -208,7 +208,7 @@ app.post("/api/user/request_pasword_reset", (req, res) => {
 
         const reset_code = crypto.randomBytes(20).toString('hex')
         sessions.set(reset_code, {
-            uuid: result.rows[0].uuid
+            uuid: result.rows[0].uuid,
             expires: new Date(Date.now() + 1000 * 60 * 15)}
         )
 
