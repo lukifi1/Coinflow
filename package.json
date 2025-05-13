@@ -4,5 +4,9 @@
     "type": "module",
     "scripts": {
         "start": "node app.js"
+    },
+    "dependencies": {
+        "nodemailer": "^7.0.2"
     }
+
 }
