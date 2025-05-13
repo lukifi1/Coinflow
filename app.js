@@ -266,4 +266,270 @@ app.post("/api/user/reset_password", async (req, res) => {
     })
 })
 
+// Copied from fink branch
+
+app.get("/api/incomes/:uuid", async (req, res) => {
+  const userUuid = req.params.uuid;
+
+  if (!isValidUuid(userUuid)) {
+    return res.status(400).json({ error: "Invalid user UUID" });
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM incomes WHERE user_uuid = $1 ORDER BY created_at DESC",
+      [userUuid]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch incomes", details: err.message });
+  }
+});
+
+app.post("/api/income/new", async (req, res) => {
+  const { user_uuid, name, amount, tags, account_id } = req.body;
+
+  if (!user_uuid || !name || !amount || !account_id) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  if (!isValidUuid(user_uuid) || !isValidUuid(account_id)) {
+    return res.status(400).json({ error: "Invalid UUID format for user or account" });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO incomes (user_uuid, name, amount, tags, account_uuid)
+         VALUES ($1, $2, $3, $4, $5)
+         RETURNING *`,
+      [user_uuid, name, amount, tags || [], account_id]
+    );
+
+    res.status(201).json({ message: "Income created", income: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create income", details: err.message });
+  }
+});
+
+app.post("/api/account/new", async (req, res) => {
+  const { user_uuid, name, type, balance } = req.body;
+
+  if (!user_uuid || !name) {
+    return res.status(400).json({ error: "Missing required fields: user_uuid and name" });
+  }
+
+  if (!isValidUuid(user_uuid)) {
+    return res.status(400).json({ error: "Invalid user UUID" });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO accounts (user_uuid, name, type, balance)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+      [user_uuid, name, type || "general", balance || 0]
+    );
+
+    res.status(201).json({ message: "Account created", account: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create account", details: err.message });
+  }
+});
+
+app.get("/api/accounts/:uuid", async (req, res) => {
+  const uuid = req.params.uuid;
+
+  if (!isValidUuid(uuid)) {
+    return res.status(400).json({ error: "Invalid UUID format" });
+  }
+
+  try {
+    const result = await pool.query(
+      "SELECT * FROM accounts WHERE user_uuid = $1 ORDER BY name ASC",
+      [uuid]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch accounts", details: err.message });
+  }
+});
+
+app.delete("/api/income/:user_uuid/:income_id", async (req, res) => {
+  const { user_uuid, income_id } = req.params;
+
+  if (!isValidUuid(user_uuid) || !isValidUuid(income_id)) {
+    return res.status(400).json({ error: "Invalid UUID format" });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM incomes WHERE id = $1 AND user_uuid = $2 RETURNING *",
+      [income_id, user_uuid]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Income not found or not owned by user" });
+    }
+
+    res.json({ message: "Income deleted", income: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete income", details: err.message });
+  }
+});
+
+// Get all expenses for a user
+app.get("/api/expenses/:uuid", async (req, res) => {
+  const user_uuid = req.params.uuid;
+  if (!isValidUuid(user_uuid)) {
+    return res.status(400).json({ error: "Invalid user UUID" });
+  }
+
+  try {
+    const result = await pool.query("SELECT * FROM expenses WHERE user_uuid = $1 ORDER BY created_at DESC", [user_uuid]);
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch expenses", details: err.message });
+  }
+});
+
+// Create a new expense
+app.post("/api/expense/new", async (req, res) => {
+  const { user_uuid, name, amount, tags, account_id } = req.body;
+
+  if (!isValidUuid(user_uuid) || !name || !amount || !account_id) {
+    return res.status(400).json({ error: "Missing required fields or invalid UUIDs" });
+  }
+
+  try {
+    await pool.query(
+      "INSERT INTO expenses (user_uuid, name, amount, tags, account_uuid) VALUES ($1, $2, $3, $4, $5)",
+      [user_uuid, name, amount, tags || [], account_id]
+    );
+    res.status(201).json({ message: "Expense added successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create expense", details: err.message });
+  }
+});
+
+// Delete a specific expense
+app.delete("/api/expense/:uuid/:expense_id", async (req, res) => {
+  const { uuid, expense_id } = req.params;
+
+  if (!isValidUuid(uuid) || !isValidUuid(expense_id)) {
+    return res.status(400).json({ error: "Invalid UUID format" });
+  }
+
+  try {
+    const result = await pool.query("DELETE FROM expenses WHERE uuid = $1 AND user_uuid = $2 RETURNING *", [expense_id, uuid]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Expense not found" });
+    }
+
+    res.json({ message: "Expense deleted", expense: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete expense", details: err.message });
+  }
+});
+
+app.delete("/api/account/:user_uuid/:account_id", async (req, res) => {
+  const { user_uuid, account_id } = req.params;
+
+  if (!isValidUuid(user_uuid) || !isValidUuid(account_id)) {
+    return res.status(400).json({ error: "Invalid UUID format" });
+  }
+
+  try {
+    const result = await pool.query(
+      "DELETE FROM accounts WHERE uuid = $1 AND user_uuid = $2 RETURNING *",
+      [account_id, user_uuid]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Account not found or not owned by user" });
+    }
+
+    res.json({ message: "Account deleted", account: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete account", details: err.message });
+  }
+});
+
+app.post("/api/transaction/new", async (req, res) => {
+  const { user_uuid, from_account, to_account, amount, description } = req.body;
+
+  if (!user_uuid || !from_account || !to_account || !amount) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  if (!isValidUuid(user_uuid) || !isValidUuid(from_account) || !isValidUuid(to_account)) {
+    return res.status(400).json({ error: "Invalid UUID format" });
+  }
+
+  if (from_account === to_account) {
+    return res.status(400).json({ error: "Cannot transfer to the same account" });
+  }
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO transactions (user_uuid, from_account, to_account, amount, description)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [user_uuid, from_account, to_account, amount, description || null]
+    );
+
+    res.status(201).json({ message: "Transaction created", transaction: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to create transaction", details: err.message });
+  }
+});
+
+app.get("/api/transactions/:uuid", async (req, res) => {
+  const user_uuid = req.params.uuid;
+
+  if (!isValidUuid(user_uuid)) {
+    return res.status(400).json({ error: "Invalid UUID format" });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM transactions
+       WHERE user_uuid = $1
+       ORDER BY created_at DESC`,
+      [user_uuid]
+    );
+
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch transactions", details: err.message });
+  }
+});
+
+app.delete("/api/transaction/:uuid/:transaction_id", async (req, res) => {
+  const { uuid, transaction_id } = req.params;
+
+  if (!isValidUuid(uuid) || !isValidUuid(transaction_id)) {
+    return res.status(400).json({ error: "Invalid UUID format" });
+  }
+
+  try {
+    const result = await pool.query(
+      `DELETE FROM transactions
+       WHERE uuid = $1 AND user_uuid = $2
+       RETURNING *`,
+      [transaction_id, uuid]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: "Transaction not found" });
+    }
+
+    res.json({ message: "Transaction deleted", transaction: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete transaction", details: err.message });
+  }
+});
+
 app.listen(8080)
