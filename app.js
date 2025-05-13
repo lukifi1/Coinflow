@@ -153,7 +153,7 @@ app.delete("/api/user/:uuid", (req, res) => {
     })
 })
 
-app.post("/api/user/login", async (req, res) => {
+app.post("/api/user/login", (req, res) => {
     if (!req.body) {
         res.status(400).json({ message: "bruh, I need me some json" })
         return
@@ -166,8 +166,8 @@ app.post("/api/user/login", async (req, res) => {
 
     pool.query("SELECT uuid password_hash FROM users WHERE email = $1", [req.body.email])
     .then((result) => {
-        if (result.rows[0].password_hash != req.body.password_hash) {
-            res.status(401).json({ error: "Invalid credentials" })
+        if (result.rowCount == 0 || result.rows[0].password_hash != req.body.password_hash) {
+            res.status(401).json({ message: "Invalid credentials" })
             return
         }
 
@@ -179,9 +179,87 @@ app.post("/api/user/login", async (req, res) => {
         })
 
         res.json({
-            token,
-            uuid: user.uuid
+            uuid: result.rows[0].uuid,
+            token
         })
+    })
+    .catch((error) => {
+        res.status(500).json({ error })
+    })
+})
+
+app.post("/api/user/request_pasword_reset", (req, res) => {
+    if (!req.body) {
+        res.status(400).json({ message: "bruh, I need me some json" })
+        return
+    }
+
+    if (!req.body.email) {
+        res.status(400).json({ message: "Email required" })
+        return
+    }
+
+    pool.query("SELECT uuid FROM users WHERE email = $1", [req.body.email])
+    .then((result) => {
+        if (result.rowCount == 0) {
+            res.status(401).json({ message: "Invalid credentials" })
+            return
+        }
+
+        const reset_code = crypto.randomBytes(20).toString('hex')
+        sessions.set(reset_code, {
+            uuid: result.rows[0].uuid
+            expires: new Date(Date.now() + 1000 * 60 * 15)}
+        )
+
+        const reset_link = `http://localhost:8080/update-password.html?code=${reset_code}`
+
+        transporter.sendMail({
+            from: `CoinFlow <${process.env.EMAIL_USER}>`,
+            to: req.body.email,
+            subject: "Reset your CoinFlow password",
+            html: `
+                      <p>Hello,</p>
+                      <p>Click the link below to reset your password:</p>
+                      <a href="${reset_link}">Reset Password</a>
+                      <p>This link will expire in 15 minutes.</p>
+                  `
+        })
+
+        res.status(200).end()
+    })
+    .catch((error) => {
+        res.status(500).json({ error })
+    })
+})
+
+app.post("/api/user/reset_password", async (req, res) => {
+    if (!req.body) {
+        res.status(400).json({ message: "bruh, I need me some json" })
+        return
+    }
+
+    if (!req.body.reset_code || !req.body.new_password_hash) {
+        res.status(400).json({ message: "Reset code and new password required" })
+        return
+    }
+
+    if (!session.has(req.body.reset_code)) {
+        res.status(401).json({ message: "Invalid reset code" })
+        return
+    }
+
+    const reset = sessions.get(req.body.reset_code)
+    if (reset.expires > Date.now()) {
+        sessions.delete(req.body.reset_code)
+        res.status(401).json({ message: "Invalid reset code" })
+        return
+    }
+
+    pool.query("UPDATE users SET password_hash = $1 WHERE uuid = $2", [req.body.new_password_hash, reset.uuid])
+    .then((result) => {
+        sessions.delete(req.body.reset_code)
+        res.status(200).end()
     })
     .catch((error) => {
         res.status(500).json({ error })

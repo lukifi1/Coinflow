@@ -15,7 +15,7 @@
       Returns html file<br>
       Returns errors as json
     </p>
-    
+
     <h2>User Stuff</h2>
     <p>These are currently usable by everyone, but will at some point require authentication</p>
     <h3>GET /api/user</h3>
@@ -25,7 +25,7 @@
       Returns UUID as json<br>
       Returns errors as json
     </p>
-    
+
     <h3>POST /api/user/new</h3>
     <p>
       Add new user to database<br>
@@ -33,7 +33,7 @@
       Returns UUID of new user as json<br>
       Returns errors as json
     </p>
-    
+
     <h3>GET /api/user/:uuid</h3>
     <p>
       Get user info from database<br>
@@ -41,7 +41,7 @@
       Returns username, email and password_hash as json<br>
       Returns errors as json
     </p>
-    
+
     <h3>PUT /api/user/:uuid</h3>
     <p>
       Add new user to database<br>
@@ -50,7 +50,7 @@
       Returns updated username, email and password_hash as json<br>
       Returns errors as json
     </p>
-    
+
     <h3>DELETE /api/user/:uuid</h3>
     <p>
       Remove user from database<br>
@@ -58,12 +58,29 @@
       Returns deleted username, email and password_hash as json<br>
       Returns errors as json
     </p>
-    
+
     <h3>POST /api/user/login</h3>
     <p>
       Create seesion for user<br>
-      Takes in an email and password_hash in the body<br>
+      Takes in an email and password_hash as json in the body<br>
       Returns token and uuid as json<br>
+      Returns errors as json
+    </p>
+
+    <h3>POST /api/user/request_password_reset</h3>
+    <p> 
+      Initiate password reset for user<br>
+      Takes in an email as json in the body<br>
+      Creates sessions entry which contains the reset_code, email and expiration<br>
+      Return 200 on success<br>
+      Returns errors as json
+    </p>
+
+    <h3>POST /api/user/reset_password</h3>
+    <p> 
+      Reset password for user<br>
+      Takes in a reset code and new password_hash as json in the body<br>
+      Returns 200 on success<br>
       Returns errors as json
     </p>
 
