@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoinFlow - Add Account</title>
+  <link rel="stylesheet" href="style/global.css" />
+  <link rel="stylesheet" href="style/add-bank.css" />
+</head>
+
+<body>
+  <div id="navbar"></div>
+
+  <main class="add-account-main">
+    <h2>Add a New Account 🏦</h2>
+    <form id="addAccountForm" class="add-account-form">
+      <input type="text" id="accountName" placeholder="Account Name" required />
+      <input type="number" step="0.01" id="initialBalance" placeholder="Initial Balance (€)" required />
+      <button type="submit">Create Account</button>
+    </form>
+    <p id="statusMessage"></p>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Load navbar
+      fetch("/navbar.html")
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById("navbar").innerHTML = html;
+          document.getElementById("logoutBtn")?.addEventListener("click", () => {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = "/login.html";
+          });
+        });
+
+      const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
+      const token = storage.getItem("session_token");
+      const uuid = storage.getItem("user_uuid");
+
+      if (!token || !uuid) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      const form = document.getElementById("addAccountForm");
+      const statusMsg = document.getElementById("statusMessage");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById("accountName").value.trim();
+        const balance = parseFloat(document.getElementById("initialBalance").value);
+
+        if (!name || isNaN(balance)) {
+          statusMsg.textContent = "Please fill in all fields.";
+          return;
+        }
+
+        const response = await fetch('/api/account/new', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            user_uuid: uuid,
+            name,
+            balance
+          })
+        });
+
+        if (response.ok) {
+          statusMsg.textContent = "✅ Account successfully created!";
+          form.reset();
+        } else {
+          statusMsg.textContent = "❌ Failed to create account.";
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

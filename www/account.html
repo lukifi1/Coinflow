@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CoinFlow - Account Settings</title>
+    <link rel="stylesheet" href="style/account.css" />
+    <link rel="stylesheet" href="style/global.css" />
+</head>
+
+<body>
+    <div id="navbar"></div>
+
+    <div class="account-wrapper">
+        <div class="account-container">
+            <h1>Account Settings</h1>
+            <form id="accountForm">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="password">New Password</label>
+                    <input type="password" id="password" name="password"
+                        placeholder="Leave blank to keep current password" />
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword"
+                        placeholder="Repeat new password" />
+                </div>
+
+                <button type="submit" class="save-btn">Save Changes</button>
+                <div id="statusMessage" class="message"></div>
+            </form>
+
+            <a href="/dashboard.html" class="back-btn">← Back to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        // Load navbar
+        fetch("/navbar.html")
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById("navbar").innerHTML = html;
+                document.getElementById("logoutBtn")?.addEventListener("click", () => {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = "/login.html";
+                });
+            });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
+            const token = storage.getItem("session_token");
+            const uuid = storage.getItem("user_uuid");
+
+            const form = document.getElementById("accountForm");
+            const message = document.getElementById("statusMessage");
+
+            if (!token || !uuid) {
+                window.location.href = "/login.html";
+                return;
+            }
+
+            // Populate fields
+            fetch(`/api/user/${uuid}`)
+                .then(res => res.json())
+                .then(user => {
+                    form.username.value = user.username;
+                    form.email.value = user.email;
+                })
+                .catch(() => {
+                    message.textContent = "Failed to load account details.";
+                    message.className = "message error";
+                });
+
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const username = form.username.value.trim();
+                const email = form.email.value.trim();
+                const password = form.password.value.trim();
+                const confirmPassword = form.confirmPassword.value.trim();
+
+                if (password && password !== confirmPassword) {
+                    message.textContent = "Passwords do not match.";
+                    message.className = "message error";
+                    return;
+                }
+
+                if (!username || !email) {
+                    message.textContent = "Username and email are required.";
+                    message.className = "message error";
+                    return;
+                }
+
+                const payload = {
+                    username,
+                    email,
+                    password_hash: password || ""
+                };
+
+                try {
+                    const res = await fetch(`/api/user/${uuid}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        let seconds = 5;
+                        storage.setItem("username", username);
+
+                        const updateMessage = () => {
+                            message.textContent = `Account updated successfully. Redirecting to dashboard in ${seconds} second${seconds !== 1 ? 's' : ''}...`;
+                            message.className = "message success";
+                        };
+
+                        updateMessage();
+
+                        const interval = setInterval(() => {
+                            seconds--;
+                            if (seconds > 0) {
+                                updateMessage();
+                            } else {
+                                clearInterval(interval);
+                                window.location.href = "/dashboard.html";
+                            }
+                        }, 1000);
+                    } else {
+                        message.textContent = data.error || "Update failed.";
+                        message.className = "message error";
+                    }
+                } catch (err) {
+                    message.textContent = "Network error. Please try again.";
+                    message.className = "message error";
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

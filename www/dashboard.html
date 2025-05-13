@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoinFlow - Dashboard</title>
+  <link rel="stylesheet" href="style/dashboard.css">
+  <link rel="stylesheet" href="style/global.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
+</head>
+
+<body>
+  <div id="navbar"></div>
+
+  <main class="dashboard-main">
+    <h2>Hello, <span id="username">User</span> 👋</h2>
+    <p>This is your personal finance dashboard.</p>
+    <section class="dashboard-split">
+      <div class="chart-section">
+        <h3>Monthly Net</h3>
+        <canvas id="monthlyNetChart" width="600" height="300"></canvas>
+      </div>
+
+      <aside class="accounts-section">
+        <h3>Banks</h3>
+        <div id="dashboardAccountsContainer" class="dashboard-accounts-container">Loading accounts...</div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
+      const token = storage.getItem("session_token");
+      const username = storage.getItem("username");
+      const uuid = storage.getItem("user_uuid");
+
+      if (!token || !username) {
+        window.location.href = "/login.html";
+        return;
+      } else {
+        loadMonthlyNetChart(uuid);
+      }
+
+      async function loadMonthlyNetChart(uuid) {
+        const [incomesRes, expensesRes] = await Promise.all([
+          fetch(`/api/incomes/${uuid}`),
+          fetch(`/api/expenses/${uuid}`)
+        ]);
+
+        const incomes = await incomesRes.json();
+        const expenses = await expensesRes.json();
+
+        const months = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+
+        const monthlyNet = {};
+
+        // Initialize each month to 0
+        months.forEach(m => monthlyNet[m] = 0);
+
+        // Don't skip months that have a 0 value!
+        incomes.forEach(i => {
+          if (i.month && monthlyNet.hasOwnProperty(i.month)) {
+            monthlyNet[i.month] += parseFloat(i.amount);
+          }
+        });
+
+        expenses.forEach(e => {
+          if (e.month && monthlyNet.hasOwnProperty(e.month)) {
+            monthlyNet[e.month] -= parseFloat(e.amount);
+          }
+        });
+
+        const data = months.map(m => monthlyNet[m]);
+
+        const canvas = document.getElementById("monthlyNetChart");
+        if (!canvas) {
+          console.error("Canvas #monthlyNetChart not found");
+          return;
+        }
+
+        const ctx = canvas.getContext("2d");
+
+        const borderColors = data.map(value => value < 0 ? "#e74c3c" : "#3498db");
+        const backgroundColors = data.map(value => value < 0 ? "rgba(231, 76, 60, 0.1)" : "rgba(52, 152, 219, 0.1)");
+
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: months,
+            datasets: [{
+              label: "Monthly Net",
+              data,
+              fill: true,
+              backgroundColor: "rgba(52, 152, 219, 0.1)", // fallback
+              borderColor: "#3498db", // fallback
+              borderWidth: 2,
+              tension: 0.3,
+
+              // Point styling
+              pointBackgroundColor: data.map(value =>
+                value < 0 ? "#e74c3c" : value > 0 ? "#2ecc71" : "#3498db"
+              ),
+              pointBorderColor: data.map(value =>
+                value < 0 ? "#e74c3c" : value > 0 ? "#2ecc71" : "#3498db"
+              ),
+              pointRadius: 4,
+
+              // Segment styling
+              segment: {
+                borderColor: ctx => {
+                  const i = ctx.p0DataIndex;
+                  const val = data[i];
+                  const nextVal = data[i + 1];
+                  return (val < 0 || nextVal < 0)
+                    ? "#e74c3c"
+                    : (val > 0 || nextVal > 0)
+                      ? "#2ecc71"
+                      : "#3498db";
+                },
+                backgroundColor: ctx => {
+                  const i = ctx.p0DataIndex;
+                  const val = data[i];
+                  const nextVal = data[i + 1];
+                  return (val < 0 || nextVal < 0)
+                    ? "rgba(231, 76, 60, 0.1)"
+                    : (val > 0 || nextVal > 0)
+                      ? "rgba(46, 204, 113, 0.1)"
+                      : "rgba(52, 152, 219, 0.1)";
+                }
+              }
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: value => `€${(value / 1000).toFixed(1)}K`
+                }
+              }
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: ctx => `€${ctx.raw.toFixed(2)}`
+                }
+              }
+            }
+          }
+        });
+      }
+
+      async function loadDashboardAccounts(uuid) {
+        const container = document.getElementById("dashboardAccountsContainer");
+        container.innerHTML = "";
+
+        try {
+          const res = await fetch(`/api/accounts/${uuid}`);
+          const accounts = await res.json();
+
+          if (!accounts.length) {
+            container.textContent = "No accounts found.";
+            return;
+          }
+
+          accounts.forEach(account => {
+            const card = document.createElement("div");
+            card.className = "dashboard-account-card";
+
+            // Choose image based on name/type — fallback to cash
+            const logoMap = {
+              "santander": "santander.png",
+              "erste": "erste.png",
+              "bargeld": "cash.jpg"
+            };
+            const nameKey = account.name.toLowerCase();
+            const imgSrc = `/assets/banks/${logoMap[nameKey] || "default.png"}`;
+
+            card.innerHTML = `
+  <div class="bank-info">
+    <h4>${account.name}</h4>
+    <p><strong>Balance:</strong> €${parseFloat(account.balance).toFixed(2)}</p>
+  </div>
+`;
+            container.appendChild(card);
+          });
+
+        } catch (err) {
+          container.textContent = "Error loading accounts.";
+          console.error(err);
+        }
+      }
+
+      // call it after chart
+      loadDashboardAccounts(uuid);
+
+      document.getElementById("username").textContent = username;
+
+      // Load navbar.html
+      fetch("/navbar.html")
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById("navbar").innerHTML = html;
+
+          document.getElementById("logoutBtn")?.addEventListener("click", () => {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = "/login.html";
+          });
+        });
+    });
+  </script>
+</body>
+
+</html>

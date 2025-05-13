@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoinFlow - Add Transaction</title>
+  <link rel="stylesheet" href="style/global.css" />
+  <link rel="stylesheet" href="style/add-transaction.css" />
+</head>
+
+<body>
+  <div id="navbar"></div>
+
+  <main class="add-transaction-main">
+    <h2>Transfer Between Accounts 🔁</h2>
+
+    <form id="transactionForm" class="add-transaction-form">
+      <select id="fromAccount" required>
+        <option value="">From Account</option>
+      </select>
+
+      <select id="toAccount" required>
+        <option value="">To Account</option>
+      </select>
+
+      <input type="number" id="amount" placeholder="Amount (€)" min="0.01" step="0.01" required />
+      <input type="text" id="description" placeholder="Optional Description" />
+
+      <button type="submit">Submit Transfer</button>
+    </form>
+
+    <p id="statusMessage"></p>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      fetch("/navbar.html")
+        .then(res => res.text())
+        .then(html => {
+          document.getElementById("navbar").innerHTML = html;
+          document.getElementById("logoutBtn")?.addEventListener("click", () => {
+            localStorage.clear();
+            sessionStorage.clear();
+            window.location.href = "/login.html";
+          });
+        });
+
+      const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
+      const token = storage.getItem("session_token");
+      const uuid = storage.getItem("user_uuid");
+
+      if (!token || !uuid) {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      const fromSelect = document.getElementById("fromAccount");
+      const toSelect = document.getElementById("toAccount");
+
+      // Load accounts for dropdowns
+      fetch(`/api/accounts/${uuid}`)
+        .then(res => res.json())
+        .then(accounts => {
+          accounts.forEach(account => {
+            const option = new Option(account.name, account.id);
+            fromSelect.appendChild(option.cloneNode(true));
+            toSelect.appendChild(option.cloneNode(true));
+          });
+        });
+
+      // Handle form submission
+      document.getElementById("transactionForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const from_account = fromSelect.value;
+        const to_account = toSelect.value;
+        const amount = parseFloat(document.getElementById("amount").value);
+        const description = document.getElementById("description").value.trim();
+        const status = document.getElementById("statusMessage");
+
+        if (!from_account || !to_account || from_account === to_account || isNaN(amount)) {
+          status.textContent = "Invalid transaction details.";
+          return;
+        }
+
+        const res = await fetch("/api/transaction/new", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_uuid: uuid, from_account, to_account, amount, description })
+        });
+
+        if (res.ok) {
+          status.textContent = "✅ Transaction successful!";
+          e.target.reset();
+        } else {
+          const err = await res.json();
+          status.textContent = "❌ Failed to transfer: " + err.error;
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

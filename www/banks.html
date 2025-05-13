@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CoinFlow - Account Settings</title>
+    <link rel="stylesheet" href="style/banks.css" />
+    <link rel="stylesheet" href="style/global.css" />
+    <link rel="stylesheet" href="style/add-bank.css" />
+</head>
+
+<body>
+    <div id="navbar"></div>
+
+    <main class="banks-main">
+        <h2>Your Linked Bank Accounts 🏦</h2>
+        <button id="goToAddAccountBtn" class="add-account-btn">➕ Add New Account</button>
+        <div id="accountsContainer" class="accounts-container">Loading accounts...</div>
+    </main>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const form = document.getElementById("addAccountForm");
+            const statusMsg = document.getElementById("statusMessage");
+
+            form?.addEventListener("submit", async (e) => {
+                e.preventDefault();
+
+                const name = document.getElementById("accountName").value.trim();
+                const balance = parseFloat(document.getElementById("initialBalance").value);
+
+                if (!name || isNaN(balance)) {
+                    statusMsg.textContent = "Please fill in all fields.";
+                    return;
+                }
+
+                const response = await fetch('/api/account/new', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        user_uuid: uuid,
+                        name,
+                        balance
+                    })
+                });
+
+                if (response.ok) {
+                    statusMsg.textContent = "✅ Account successfully created!";
+                    form.reset();
+                    document.getElementById("addAccountModal").classList.add("hidden");
+                    location.reload(); // Reload to show new account
+                } else {
+                    statusMsg.textContent = "❌ Failed to create account.";
+                }
+            });
+
+            document.getElementById("goToAddAccountBtn")?.addEventListener("click", () => {
+                document.getElementById("addAccountModal").classList.remove("hidden");
+            });
+            document.querySelector(".close-modal")?.addEventListener("click", () => {
+                document.getElementById("addAccountModal").classList.add("hidden");
+            });
+            // Load navbar
+            fetch("/navbar.html")
+                .then(res => res.text())
+                .then(html => {
+                    document.getElementById("navbar").innerHTML = html;
+                    document.getElementById("logoutBtn")?.addEventListener("click", () => {
+                        localStorage.clear();
+                        sessionStorage.clear();
+                        window.location.href = "/login.html";
+                    });
+                });
+
+            const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
+            const token = storage.getItem("session_token");
+            const uuid = storage.getItem("user_uuid");
+
+            if (!token || !uuid) {
+                window.location.href = "/login.html";
+                return;
+            }
+
+            fetch(`/api/accounts/${uuid}`)
+                .then(res => res.json())
+                .then(accounts => {
+                    const container = document.getElementById("accountsContainer");
+                    container.innerHTML = "";
+
+                    if (!accounts || accounts.length === 0) {
+                        container.textContent = "You don't have any linked accounts yet.";
+                        return;
+                    }
+
+                    accounts.forEach(account => {
+                        const card = document.createElement("div");
+                        card.className = "account-card";
+                        card.innerHTML = `
+    <h3>${account.name}</h3>
+    <p><strong>Balance:</strong> €${parseFloat(account.balance).toFixed(2)}</p>
+    <button class="delete-account-btn" data-id="${account.id}">🗑️ Delete</button>
+  `;
+                        container.appendChild(card);
+                    });
+                    document.querySelectorAll(".delete-account-btn").forEach(btn => {
+                        btn.addEventListener("click", async () => {
+                            const accountId = btn.getAttribute("data-id");
+                            if (!confirm("Are you sure you want to delete this account?")) return;
+
+                            try {
+                                const res = await fetch(`/api/account/${uuid}/${accountId}`, { method: "DELETE" });
+                                if (!res.ok) throw new Error("Failed to delete account");
+                                location.reload(); // Refresh the page after deletion
+                            } catch (err) {
+                                alert("Error deleting account");
+                                console.error(err);
+                            }
+                        });
+                    });
+                })
+                .catch(err => {
+                    document.getElementById("accountsContainer").textContent = "Failed to load accounts.";
+                    console.error("Error loading accounts:", err);
+                });
+        });
+    </script>
+    <!-- Modal for Adding a New Account -->
+    <div id="addAccountModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Add a New Account 🏦</h2>
+            <form id="addAccountForm" class="add-account-form">
+                <input type="text" id="accountName" placeholder="Account Name" required />
+                <input type="number" step="0.01" id="initialBalance" placeholder="Initial Balance (€)" required />
+                <button type="submit">Create Account</button>
+            </form>
+            <p id="statusMessage"></p>
+        </div>
+    </div>
+</body>
+
+</html>
