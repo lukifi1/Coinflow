@@ -1,7 +1,9 @@
 import express from "express"
-import path from "path";
+import path from "path"
 import "dotenv/config"
 import pg from "pg"
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 // Documentation from pg: https://node-postgres.com/apis/pool
 const { Pool } = pg
@@ -12,6 +14,17 @@ const pool = new Pool({
     database: process.env.POSTGRES_DB,
     port: 5432,
 })
+
+// Nodemailer (Gmail)
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+const sessions = new Map(); // In-memory session store
 
 const app = express()
 
@@ -134,6 +147,41 @@ app.delete("/api/user/:uuid", (req, res) => {
     pool.query("SELECT * FROM delete_user($1)", [req.params.uuid])
     .then((result) => {
         res.send(result.rows[0])
+    })
+    .catch((error) => {
+        res.status(500).json({ error })
+    })
+})
+
+app.post("/api/user/login", async (req, res) => {
+    if (!req.body) {
+        res.status(400).json({ message: "bruh, I need me some json" })
+        return
+    }
+
+    if (!req.body.email || !req.body.password_hash) {
+        res.status(400).json({ message: "Email and password required" })
+        return
+    }
+
+    pool.query("SELECT uuid password_hash FROM users WHERE email = $1", [req.body.email])
+    .then((result) => {
+        if (result.rows[0].password_hash != req.body.password_hash) {
+            res.status(401).json({ error: "Invalid credentials" })
+            return
+        }
+
+        const token = crypto.randomUUID()
+
+        sessions.set(token, {
+            uuid: result.rows[0].uuid,
+            createdAt: Date.now()
+        })
+
+        res.json({
+            token,
+            uuid: user.uuid
+        })
     })
     .catch((error) => {
         res.status(500).json({ error })
