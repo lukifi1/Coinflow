@@ -33,13 +33,23 @@
     document.addEventListener("DOMContentLoaded", () => {
       const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
       const token = storage.getItem("session_token");
-      const username = storage.getItem("username");
       const uuid = storage.getItem("user_uuid");
-
-      if (!token || !username) {
+  
+      if (!token || !uuid) {
         window.location.href = "/login.html";
         return;
       } else {
+        fetch(`/api/user/${uuid}`)
+          .then(response => response.json())
+          .then(data => {
+            const usernameElement = document.getElementById("username");
+            if (usernameElement && data.username) {
+              usernameElement.textContent = data.username;
+              storage.setItem("username", data.username);
+            }
+          })
+          .catch(error => console.error("Error fetching username:", error));
+      
         loadMonthlyNetChart(uuid);
       }
 
