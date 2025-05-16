@@ -209,7 +209,7 @@ app.post("/api/user/request_password_reset", (req, res) => {
         const reset_code = crypto.randomBytes(20).toString('hex')
         sessions.set(reset_code, {
             uuid: result.rows[0].uuid,
-            expires: new Date(Date.now() + 1000 * 60 * 15)}
+            expires: new Date(Date.now() + 1000 * 60 * 15).getTime()}
         )
 
         const reset_link = `http://localhost:8080/update-password.html?code=${reset_code}`
@@ -245,14 +245,14 @@ app.post("/api/user/reset_password", async (req, res) => {
     }
 
     if (!sessions.has(req.body.reset_code)) {
-        res.status(401).json({ message: "Invalid reset code" })
+        res.status(400).json({ message: "Invalid reset code" })
         return
     }
 
     const reset = sessions.get(req.body.reset_code)
     if (reset.expires < Date.now()) {
         sessions.delete(req.body.reset_code)
-        res.status(401).json({ message: "Invalid reset code" })
+        res.status(400).json({ message: "Invalid reset code" })
         return
     }
 
