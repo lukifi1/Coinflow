@@ -1,5 +1,13 @@
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("registerForm");
+    //Pasword hashing vio crypto api
+    async function hashPassword(password) {
+        const msgUint8 = new TextEncoder().encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
+    }
 
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -21,13 +29,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
+            const password_hash = await hashPassword(password);
+
             const response = await fetch("/api/user/new", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     username: fullName,
                     email: email,
-                    password_hash: password // NOTE: hashing should be added later
+                    password_hash: password_hash
                 })
             });
 
