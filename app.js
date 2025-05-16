@@ -164,7 +164,7 @@ app.post("/api/user/login", (req, res) => {
         return
     }
 
-    pool.query("SELECT uuid password_hash FROM users WHERE email = $1", [req.body.email])
+    pool.query("SELECT uuid, password_hash FROM users WHERE email = $1", [req.body.email])
     .then((result) => {
         if (result.rowCount == 0 || result.rows[0].password_hash != req.body.password_hash) {
             res.status(401).json({ message: "Invalid credentials" })
@@ -188,7 +188,7 @@ app.post("/api/user/login", (req, res) => {
     })
 })
 
-app.post("/api/user/request_pasword_reset", (req, res) => {
+app.post("/api/user/request_password_reset", (req, res) => {
     if (!req.body) {
         res.status(400).json({ message: "bruh, I need me some json" })
         return
@@ -244,13 +244,13 @@ app.post("/api/user/reset_password", async (req, res) => {
         return
     }
 
-    if (!session.has(req.body.reset_code)) {
+    if (!sessions.has(req.body.reset_code)) {
         res.status(401).json({ message: "Invalid reset code" })
         return
     }
 
     const reset = sessions.get(req.body.reset_code)
-    if (reset.expires > Date.now()) {
+    if (reset.expires < Date.now()) {
         sessions.delete(req.body.reset_code)
         res.status(401).json({ message: "Invalid reset code" })
         return
