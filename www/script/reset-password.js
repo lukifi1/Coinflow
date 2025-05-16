@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(async () => {
       try {
         submitButton.textContent = "Sending...";
-        const res = await fetch("/auth/request-reset", {
+        const res = await fetch("/api/user/request_password_reset", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email })
