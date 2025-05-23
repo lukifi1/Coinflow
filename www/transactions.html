@@ -19,6 +19,7 @@
                 <button id="deleteSelectedBtn" class="bulk-delete-btn" style="display: none;">Delete Selected</button>
                 <a href="/dashboard.html" class="back-link">← Back to Dashboard</a>
                 <a href="/add-transaction.html" class="add-transaction-btn">+ New Transaction</a>
+                <a href="/upload-transactions.html" class="add-transaction-btn">+ Bulk Upload Transactions</a>
             </div>
         </header>
 
@@ -28,6 +29,21 @@
     </div>
 
     <script>
+        let currencySymbol = "€"; // default
+
+        async function loadUserCurrencySymbol(user_uuid) {
+            try {
+                const res = await fetch(`/api/settings/${user_uuid}`);
+                if (res.ok) {
+                    const settings = await res.json();
+                    if (settings.currency_symbol) {
+                        currencySymbol = settings.currency_symbol;
+                    }
+                }
+            } catch (err) {
+                console.warn("Currency symbol fallback to €");
+            }
+        }
         // Global UUID access
         const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
         const uuid = storage.getItem("user_uuid");
@@ -130,7 +146,7 @@
                     });
                 });
             };
-
+            await loadUserCurrencySymbol(uuid);
             try {
                 const [transactionsRes, accountsRes] = await Promise.all([
                     fetch(`/api/transactions/${uuid}`),
@@ -143,33 +159,36 @@
                 if (!transactionsRes.ok || !Array.isArray(transactions)) throw new Error("Failed to load transactions.");
                 if (!accountsRes.ok || !Array.isArray(accounts)) throw new Error("Failed to load accounts.");
 
-                const accountMap = Object.fromEntries(accounts.map(acc => [acc.id, acc.name]));
-
                 if (transactions.length === 0) {
                     transactionList.innerHTML = '<p>No transaction records found.</p>';
                     return;
                 }
 
                 const total = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+                // Create a UUID-to-name lookup for accounts
+                const accountMap = Object.fromEntries(accounts.map(account => [account.uuid, account.name]));
+
                 const rows = transactions.map(transaction => {
-  const fromAccountName = accountMap[transaction.from_account] || 'Unknown';
-  const toAccountName = accountMap[transaction.to_account] || 'Unknown';
+                    const fromAccountName = accountMap[transaction.from_account] || 'Unknown';
+                    const toAccountName = accountMap[transaction.to_account] || 'Unknown';
+
                     return `
-  <tr>
-    <td><input type="checkbox" class="row-checkbox" data-id="${transaction.id}" /></td>
-    <td>${fromAccountName}</td>
-    <td>${toAccountName}</td>
-    <td>€${parseFloat(transaction.amount).toFixed(2)}</td>
-    <td>${transaction.description || '-'}</td>
-    <td>${new Date(transaction.created_at).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'long', day: 'numeric'
-    })}</td>
-    <td>
-      <button class="delete-btn" data-id="${transaction.id}" title="Delete">
-        <i class="fas fa-trash-alt"></i>
-      </button>
-    </td>
-  </tr>`;
+    <tr>
+      <td><input type="checkbox" class="row-checkbox" data-id="${transaction.uuid}" /></td>
+      <td>${fromAccountName}</td>
+      <td>${toAccountName}</td>
+      <td>${currencySymbol}${parseFloat(transaction.amount).toFixed(2)}</td>
+      <td>${transaction.description || '-'}</td>
+      <td>${new Date(transaction.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric', month: 'long', day: 'numeric'
+                    })}</td>
+      <td>
+        <button class="delete-btn" data-id="${transaction.uuid}" title="Delete">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </td>
+    </tr>
+  `;
                 }).join('');
 
                 transactionList.innerHTML = `
@@ -188,7 +207,7 @@
     <tbody>${rows}</tbody>
     <tfoot>
       <tr>
-        <td colspan="7" class="total-row">Total Transferred: <span id="totalSum">€${total.toFixed(2)}</span></td>
+        <td colspan="7" class="total-row">Total Transferred: <span id="totalSum">${currencySymbol}${total.toFixed(2)}</span></td>
       </tr>
     </tfoot>
   </table>`;
@@ -248,7 +267,7 @@
 
             const totalElem = document.getElementById("totalSum");
             if (totalElem) {
-                totalElem.textContent = `€${newTotal.toFixed(2)}`;
+                totalElem.textContent = `${currencySymbol}${newTotal.toFixed(2)}`;
             }
         }
         let currentSort = { key: null, direction: "asc" };

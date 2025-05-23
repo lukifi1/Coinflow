@@ -51,6 +51,26 @@ CREATE TABLE IF NOT EXISTS transactions (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS public.settings (
+    user_uuid UUID PRIMARY KEY REFERENCES users(uuid) ON DELETE CASCADE,
+    currency_symbol TEXT NOT NULL DEFAULT '€',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE OR REPLACE FUNCTION update_settings_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at := CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_settings_timestamp
+BEFORE UPDATE ON public.settings
+FOR EACH ROW
+EXECUTE FUNCTION update_settings_timestamp();
+
 
 CREATE OR REPLACE FUNCTION public.delete_user(in_uuid uuid) RETURNS TABLE (username text, email text, password_hash text)
         LANGUAGE plpgsql STRICT

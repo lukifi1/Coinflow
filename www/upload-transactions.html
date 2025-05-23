@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CoinFlow - Bulk Upload Transactions</title>
+    <link rel="stylesheet" href="style/global.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #eef2f3, #c3cfe2);
+            margin: 0;
+            padding: 0;
+        }
+
+        .transaction-container {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-container header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 25px;
+        }
+
+        .transaction-container h1 {
+            font-size: 26px;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .back-link {
+            font-size: 14px;
+            text-decoration: none;
+            color: #3498db;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover {
+            color: #2980b9;
+            text-decoration: underline;
+        }
+
+        .transaction-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px 14px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            width: 95%;
+            background-color: #f9fafc;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: #3498db;
+            outline: none;
+            background-color: #fff;
+        }
+
+        .save-btn {
+            background-color: #2ecc71;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .save-btn:hover {
+            background-color: #27ae60;
+        }
+
+        .message {
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .message.success {
+            color: #2ecc71;
+        }
+
+        .message.error {
+            color: #e74c3c;
+        }
+
+        #previewTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        #previewTable th,
+        #previewTable td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            font-size: 13px;
+        }
+
+        #previewWrapper h3 {
+            margin-top: 30px;
+            color: #2c3e50;
+        }
+
+        .form-group select {
+            padding: 12px 14px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            width: 100%;
+            background-color: #f9fafc;
+            transition: border-color 0.3s;
+            appearance: none;
+        }
+
+        .form-group select:focus {
+            border-color: #3498db;
+            outline: none;
+            background-color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="navbar"></div>
+    <div class="transaction-container">
+        <header>
+            <h1>Bulk Upload Transactions</h1>
+            <a href="/transactions.html" class="back-link">← Back to Transactions Overview</a>
+        </header>
+
+        <form id="uploadForm" class="transaction-form">
+            <div class="form-group">
+                <label for="fromAccountSelect">From Account</label>
+                <select id="fromAccountSelect" required>
+                    <option value="">Loading accounts...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="toAccountSelect">To Account</label>
+                <select id="toAccountSelect" required>
+                    <option value="">Loading accounts...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="csvFile">Upload CSV File</label>
+                <input type="file" id="csvFile" accept=".csv" required />
+            </div>
+
+            <button type="submit" class="save-btn">Upload CSV</button>
+            <div id="statusMessage" class="message"></div>
+        </form>
+
+        <div id="previewWrapper" style="display: none;">
+            <h3>Preview</h3>
+            <table id="previewTable"></table>
+        </div>
+    </div>
+
+    <script>
+        const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
+        const uuid = storage.getItem("user_uuid");
+
+        if (!uuid) window.location.href = "/login.html";
+
+        fetch("/navbar.html")
+            .then(res => res.text())
+            .then(html => {
+                document.getElementById("navbar").innerHTML = html;
+                document.getElementById("logoutBtn")?.addEventListener("click", () => {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = "/login.html";
+                });
+            });
+
+        const accountSelect = document.getElementById("accountSelect");
+        const statusMessage = document.getElementById("statusMessage");
+        const previewTable = document.getElementById("previewTable");
+        const previewWrapper = document.getElementById("previewWrapper");
+
+        const fromAccountSelect = document.getElementById("fromAccountSelect");
+        const toAccountSelect = document.getElementById("toAccountSelect");
+
+        fetch(`/api/accounts/${uuid}`)
+            .then(res => res.json())
+            .then(accounts => {
+                if (!Array.isArray(accounts) || accounts.length === 0) {
+                    fromAccountSelect.innerHTML = toAccountSelect.innerHTML = '<option value="">No accounts found</option>';
+                    fromAccountSelect.disabled = toAccountSelect.disabled = true;
+                } else {
+                    const options = accounts.map(a => `<option value="${a.uuid}">${a.name}</option>`).join("");
+                    fromAccountSelect.innerHTML = toAccountSelect.innerHTML = options;
+                }
+            })
+            .catch(() => {
+                const error = '<option value="">Failed to load accounts</option>';
+                fromAccountSelect.innerHTML = toAccountSelect.innerHTML = error;
+                fromAccountSelect.disabled = toAccountSelect.disabled = true;
+            });
+
+        document.getElementById("uploadForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            const file = document.getElementById("csvFile").files[0];
+            const fromAccountId = fromAccountSelect.value;
+            const toAccountId = toAccountSelect.value;
+
+            if (!file || !fromAccountId || !toAccountId) {
+                statusMessage.textContent = "Please select both accounts and a file.";
+                statusMessage.className = "message error";
+                return;
+            }
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: async (results) => {
+                    const data = results.data;
+
+                    if (!data.length || !data[0].amount) {
+                        statusMessage.textContent = "CSV must include 'amount' and optionally 'description'.";
+                        statusMessage.className = "message error";
+                        return;
+                    }
+
+                    previewWrapper.style.display = "block";
+                    previewTable.innerHTML = `
+        <thead><tr>${Object.keys(data[0]).map(k => `<th>${k}</th>`).join("")}</tr></thead>
+        <tbody>${data.map(row => `
+          <tr>${Object.values(row).map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody>
+      `;
+
+                    const payload = data.map(row => ({
+                        user_uuid: uuid,
+                        from_account: fromAccountId,
+                        to_account: toAccountId,
+                        amount: parseFloat(row.amount),
+                        description: row.description || null
+                    }));
+
+                    try {
+                        const res = await fetch("/api/transaction/bulk", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload)
+                        });
+
+                        const result = await res.json();
+                        if (res.ok) {
+                            statusMessage.className = "message success";
+                            statusMessage.textContent = `Uploaded ${result.count} transactions successfully.`;
+                        } else {
+                            statusMessage.className = "message error";
+                            statusMessage.textContent = result.error || "Upload failed.";
+                        }
+                    } catch (err) {
+                        statusMessage.className = "message error";
+                        statusMessage.textContent = "Upload failed due to network error.";
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

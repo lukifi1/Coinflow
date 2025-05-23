@@ -19,6 +19,7 @@
                 <button id="deleteSelectedBtn" class="bulk-delete-btn" style="display: none;">Delete Selected</button>
                 <a href="/dashboard.html" class="back-link">← Back to Dashboard</a>
                 <a href="/add-expense.html" class="add-expense-btn">- New Expense</a>
+                <a href="/upload-expense.html" class="add-expense-btn">- Bulk Upload Expenses</a>
             </div>
         </header>
 
@@ -28,6 +29,22 @@
     </div>
 
     <script>
+
+        let currencySymbol = "${currencySymbol}"; // default
+
+        async function loadUserCurrencySymbol(user_uuid) {
+            try {
+                const res = await fetch(`/api/settings/${user_uuid}`);
+                if (res.ok) {
+                    const settings = await res.json();
+                    if (settings.currency_symbol) {
+                        currencySymbol = settings.currency_symbol;
+                    }
+                }
+            } catch (err) {
+                console.warn("Currency symbol fallback to €");
+            }
+        }
         // Global UUID access
         const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
         const uuid = storage.getItem("user_uuid");
@@ -132,6 +149,8 @@
             };
 
             try {
+                await loadUserCurrencySymbol(uuid);
+
                 const [expensesRes, accountsRes] = await Promise.all([
                     fetch(`/api/expenses/${uuid}`),
                     fetch(`/api/accounts/${uuid}`)
@@ -143,7 +162,7 @@
                 if (!expensesRes.ok || !Array.isArray(expenses)) throw new Error("Failed to load expenses.");
                 if (!accountsRes.ok || !Array.isArray(accounts)) throw new Error("Failed to load accounts.");
 
-                const accountMap = Object.fromEntries(accounts.map(acc => [acc.id, acc.name]));
+                const accountMap = Object.fromEntries(accounts.map(acc => [acc.uuid, acc.name]));
 
                 if (expenses.length === 0) {
                     expenseList.innerHTML = '<p>No expense records found.</p>';
@@ -156,14 +175,14 @@
                     const accountName = accountMap[expense.account_id] || '—';
                     return `
   <tr>
-    <td><input type="checkbox" class="row-checkbox" data-id="${expense.id}" /></td>
+    <td><input type="checkbox" class="row-checkbox" data-id="${expense.uuid}" /></td>
     <td><i class="fas fa-arrow-down icon"></i>${expense.name}</td>
-    <td>€-${parseFloat(expense.amount).toFixed(2)}</td>
+    <td>${currencySymbol}-${parseFloat(expense.amount).toFixed(2)}</td>
     <td><span class="tag">${expense.tags?.join(', ') || '-'}</span></td>
     <td>${new Date(expense.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
     <td>${expense.month}</td>
     <td>${accountName}</td>
-    <td><button class="delete-btn" data-id="${expense.id}" title="Delete"><i class="fas fa-trash-alt"></i></button></td>
+    <td><button class="delete-btn" data-id="${expense.uuid}" title="Delete"><i class="fas fa-trash-alt"></i></button></td>
   </tr>`;
                 }).join('');
 
@@ -184,7 +203,7 @@
         <tbody>${rows}</tbody>
         <tfoot>
           <tr>
-            <td colspan="8" class="total-row">Total Expense: <span id="totalSum">€-${total.toFixed(2)}</span></td>
+            <td colspan="8" class="total-row">Total Expense: <span id="totalSum">${currencySymbol}-${total.toFixed(2)}</span></td>
           </tr>
         </tfoot>
       </table>`;
@@ -244,7 +263,7 @@
 
             const totalElem = document.getElementById("totalSum");
             if (totalElem) {
-                totalElem.textContent = `€${newTotal.toFixed(2)}`;
+                totalElem.textContent = `${currencySymbol}${newTotal.toFixed(2)}`;
             }
         }
         let currentSort = { key: null, direction: "asc" };

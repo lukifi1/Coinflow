@@ -75,7 +75,7 @@
           accountSelect.innerHTML = '<option value="">No accounts found</option>';
           accountSelect.disabled = true;
         } else {
-          accountSelect.innerHTML = accounts.map(a => `<option value="${a.id}">${a.name} (${a.type || 'n/a'})</option>`).join("");
+          accountSelect.innerHTML = accounts.map(a => `<option value="${a.uuid}">${a.name}</option>`).join("");
         }
       } catch (err) {
         console.error(err);

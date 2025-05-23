@@ -63,7 +63,7 @@
         .then(res => res.json())
         .then(accounts => {
           accounts.forEach(account => {
-            const option = new Option(account.name, account.id);
+            const option = new Option(account.name, account.uuid);
             fromSelect.appendChild(option.cloneNode(true));
             toSelect.appendChild(option.cloneNode(true));
           });
