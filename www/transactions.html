@@ -20,6 +20,7 @@
                 <a href="/dashboard.html" class="back-link">← Back to Dashboard</a>
                 <a href="/add-transaction.html" class="add-transaction-btn">+ New Transaction</a>
                 <a href="/upload-transactions.html" class="add-transaction-btn">+ Bulk Upload Transactions</a>
+                <a id="exportCsvBtn" class="add-transaction-btn">Export CSV</a>
             </div>
         </header>
 
@@ -84,6 +85,40 @@
             });
 
         document.addEventListener("DOMContentLoaded", async () => {
+            document.getElementById("exportCsvBtn").addEventListener("click", () => {
+                const rows = document.querySelectorAll(".transaction-table tbody tr");
+                if (!rows.length) {
+                    showAlert("No transaction records to export.", "error");
+                    return;
+                }
+
+                const headers = ["From", "To", "Amount", "Description", "Date"];
+                const csvRows = [headers.join(",")];
+
+                rows.forEach(row => {
+                    const from = row.children[1].textContent.trim();
+                    const to = row.children[2].textContent.trim();
+                    const amount = row.children[3].textContent.trim().replace(currencySymbol, "");
+                    const description = row.children[4].textContent.trim();
+                    const date = row.children[5].textContent.trim();
+
+                    const csvRow = [from, to, amount, description, date]
+                        .map(value => `"${value.replace(/"/g, '""')}"`) // escape quotes
+                        .join(",");
+                    csvRows.push(csvRow);
+                });
+
+                const csvContent = csvRows.join("\n");
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "transaction_data.csv");
+                link.style.display = "none";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
             const transactionList = document.getElementById("transactionList");
 
             if (!uuid) {

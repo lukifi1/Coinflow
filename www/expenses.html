@@ -20,6 +20,7 @@
                 <a href="/dashboard.html" class="back-link">← Back to Dashboard</a>
                 <a href="/add-expense.html" class="add-expense-btn">- New Expense</a>
                 <a href="/upload-expense.html" class="add-expense-btn">- Bulk Upload Expenses</a>
+                <a id="exportCsvBtn" class="add-expense-btn">Export CSV</a>
             </div>
         </header>
 
@@ -85,6 +86,42 @@
             });
 
         document.addEventListener("DOMContentLoaded", async () => {
+            document.getElementById("exportCsvBtn").addEventListener("click", () => {
+                const rows = document.querySelectorAll(".expense-table tbody tr");
+                if (!rows.length) {
+                    showAlert("No expense records to export.", "error");
+                    return;
+                }
+
+                const headers = ["Name", "Amount", "Tags", "Date", "Month", "Account"];
+                const csvRows = [headers.join(",")];
+
+                rows.forEach(row => {
+                    const name = row.children[1].textContent.trim();
+                    const amount = row.children[2].textContent.trim().replace(currencySymbol, "");
+                    const tags = row.children[3].textContent.trim();
+                    const date = row.children[4].textContent.trim();
+                    const month = row.children[5].textContent.trim();
+                    const account = row.children[6].textContent.trim();
+
+                    const csvRow = [name, amount, tags, date, month, account]
+                        .map(value => `"${value.replace(/"/g, '""')}"`) // escape quotes
+                        .join(",");
+                    csvRows.push(csvRow);
+                });
+
+                const csvContent = csvRows.join("\n");
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "expense_data.csv");
+                link.style.display = "none";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
             const expenseList = document.getElementById("expenseList");
 
             if (!uuid) {
@@ -172,7 +209,7 @@
                 let total = 0;
                 const rows = expenses.map(expense => {
                     total += parseFloat(expense.amount);
-                    const accountName = accountMap[expense.account_id] || '—';
+                    const accountName = accountMap[expense.account_uuid] || '—';
                     return `
   <tr>
     <td><input type="checkbox" class="row-checkbox" data-id="${expense.uuid}" /></td>

@@ -59,6 +59,7 @@ body {
     color: white;
     text-decoration: none;
     border-color: #3498db;
+    cursor: pointer;
   }
   
   .expense-table {

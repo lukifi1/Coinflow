@@ -20,6 +20,7 @@
                 <a href="/dashboard.html" class="back-link">← Back to Dashboard</a>
                 <a href="/add-income.html" class="add-income-btn">+ New Income</a>
                 <a href="/upload-income.html" class="add-income-btn">+ Bulk Upload Incomes</a>
+                <a id="exportCsvBtn" class="add-income-btn">Export CSV</a>
             </div>
         </header>
 
@@ -84,6 +85,43 @@
             });
 
         document.addEventListener("DOMContentLoaded", async () => {
+
+            document.getElementById("exportCsvBtn").addEventListener("click", () => {
+                const rows = document.querySelectorAll(".income-table tbody tr");
+                if (!rows.length) {
+                    showAlert("No income records to export.", "error");
+                    return;
+                }
+
+                const headers = ["Name", "Amount", "Tags", "Date", "Month", "Account"];
+                const csvRows = [headers.join(",")];
+
+                rows.forEach(row => {
+                    const name = row.children[1].textContent.trim();
+                    const amount = row.children[2].textContent.trim().replace(currencySymbol, "");
+                    const tags = row.children[3].textContent.trim();
+                    const date = row.children[4].textContent.trim();
+                    const month = row.children[5].textContent.trim();
+                    const account = row.children[6].textContent.trim();
+
+                    const csvRow = [name, amount, tags, date, month, account]
+                        .map(value => `"${value.replace(/"/g, '""')}"`) // escape quotes
+                        .join(",");
+                    csvRows.push(csvRow);
+                });
+
+                const csvContent = csvRows.join("\n");
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", "income_data.csv");
+                link.style.display = "none";
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
             const incomeList = document.getElementById("incomeList");
 
             if (!uuid) {
@@ -161,7 +199,7 @@
                 if (!incomesRes.ok || !Array.isArray(incomes)) throw new Error("Failed to load incomes.");
                 if (!accountsRes.ok || !Array.isArray(accounts)) throw new Error("Failed to load accounts.");
 
-                const accountMap = Object.fromEntries(accounts.map(acc => [acc.id, acc.name]));
+                const accountMap = Object.fromEntries(accounts.map(acc => [acc.uuid, acc.name]));
 
                 if (incomes.length === 0) {
                     incomeList.innerHTML = '<p>No income records found.</p>';
@@ -171,7 +209,7 @@
                 let total = 0;
                 const rows = incomes.map(income => {
                     total += parseFloat(income.amount);
-                    const accountName = accountMap[income.account_id] || '—';
+                    const accountName = accountMap[income.account_uuid] || '—';
                     return `
   <tr>
     <td><input type="checkbox" class="row-checkbox" data-id="${income.uuid}" /></td>
