@@ -286,3 +286,15 @@ body {
 .accounts-section {
   padding-top: 1rem;
 }
+.pie-charts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
+}
+
+.pie-chart {
+  width: 280px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+

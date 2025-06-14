@@ -26,8 +26,32 @@
         <h3>Banks</h3>
         <div id="dashboardAccountsContainer" class="dashboard-accounts-container">Loading accounts...</div>
       </aside>
-    </section>
+    </section><br><br><br>
+
+    <div>
+      <h3>Expenses by Category</h3>
+
+  <section class="pie-charts-row">
+  <div class="pie-chart">
+    <h4>Income</h4>
+    <canvas id="incomePieChart"></canvas>
+  </div>
+
+  <div class="pie-chart">
+    <h4>Expenses</h4>
+    <canvas id="categoryPieChart"></canvas>
+  </div>
+
+  <div class="pie-chart">
+    <h4>Transactions</h4>
+    <canvas id="transactionPieChart"></canvas>
+  </div>
+</section>
+</div>
+
   </main>
+
+  
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -72,6 +96,8 @@
 
           await loadMonthlyNetChart(uuid);
           await loadDashboardAccounts(uuid);
+          await loadExpensesPieChart(uuid);
+          await loadIncomePieChart(uuid);
         })();
       }
 
@@ -189,6 +215,8 @@
         });
       }
 
+  
+
       async function loadDashboardAccounts(uuid) {
         const container = document.getElementById("dashboardAccountsContainer");
         container.innerHTML = "";
@@ -230,8 +258,6 @@
         }
       }
 
-      // call it after chart
-      loadDashboardAccounts(uuid);
 
       document.getElementById("username").textContent = username;
 
@@ -248,6 +274,101 @@
           });
         });
     });
+
+    async function loadIncomePieChart(uuid) {
+  try {
+    const res = await fetch(`/api/incomes/${uuid}`);
+    if (!res.ok) throw new Error("Failed to fetch incomes");
+    const incomes = await res.json();
+
+    const labels = incomes.map(i => i.name || "Unbenannt");
+    const data = incomes.map(i => parseFloat(i.amount));
+
+    const colors = [
+      "#3498db", "#e74c3c", "#2ecc71", "#f1c40f", "#9b59b6",
+      "#e67e22", "#1abc9c", "#34495e", "#95a5a6", "#d35400"
+    ];
+
+    const ctx = document.getElementById("incomePieChart")?.getContext("2d");
+    if (!ctx) {
+      console.error("Canvas #incomePieChart not found");
+      return;
+    }
+
+    new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colors,
+          borderColor: "#fff",
+          borderWidth: 2
+        }]
+      },
+      options: {
+        plugins: {
+          legend: {
+            position: "right"
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.label}: €${ctx.raw.toFixed(2)}`
+            }
+          }
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Error loading income pie chart:", error);
+  }
+}
+        
+  async function loadExpensesPieChart(uuid) {
+  const res = await fetch(`/api/expenses/${uuid}`);
+  const expenses = await res.json();
+
+  const labels = expenses.map(e => e.name || "Unbenannt");
+const data = expenses.map(e => parseFloat(e.amount));
+
+  const colors = [
+    "#3498db", "#e74c3c", "#2ecc71", "#f1c40f", "#9b59b6",
+    "#e67e22", "#1abc9c", "#34495e", "#95a5a6", "#d35400"
+  ];
+
+  const ctx = document.getElementById("categoryPieChart")?.getContext("2d");
+  if (!ctx) {
+    console.error("Canvas #categoryPieChart not found");
+    return;
+  }
+
+  new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors,
+        borderColor: "#fff",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {
+          position: "right"
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.label}: ${currencySymbol}${ctx.raw.toFixed(2)}`
+          }
+        }
+      }
+    }
+  });
+}
+
   </script>
 </body>
 
