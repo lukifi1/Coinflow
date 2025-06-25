@@ -26,10 +26,10 @@
         <h3>Banks</h3>
         <div id="dashboardAccountsContainer" class="dashboard-accounts-container">Loading accounts...</div>
       </aside>
-    </section><br><br><br>
+    </section><br><br><br><br>
 
-    <div>
-      <h3>Expenses by Category</h3>
+    <div class="expenses">
+      <h3>Expenses by Category</h3><br>
 
   <section class="pie-charts-row">
   <div class="pie-chart">
@@ -98,6 +98,7 @@
           await loadDashboardAccounts(uuid);
           await loadExpensesPieChart(uuid);
           await loadIncomePieChart(uuid);
+          await loadTransactionPieChart(uuid);
         })();
       }
 
@@ -277,9 +278,20 @@
 
     async function loadIncomePieChart(uuid) {
   try {
+    const ctx = document.getElementById("incomePieChart")?.getContext("2d");
+    if (!ctx) {
+      console.error("Canvas #incomePieChart not found");
+      return;
+    }
+    
     const res = await fetch(`/api/incomes/${uuid}`);
     if (!res.ok) throw new Error("Failed to fetch incomes");
     const incomes = await res.json();
+
+    if (!incomes.length) {
+    createNoDataChart(ctx, "#b5b5b5");
+    return;
+  }
 
     const labels = incomes.map(i => i.name || "Unbenannt");
     const data = incomes.map(i => parseFloat(i.amount));
@@ -289,11 +301,6 @@
       "#e67e22", "#1abc9c", "#34495e", "#95a5a6", "#d35400"
     ];
 
-    const ctx = document.getElementById("incomePieChart")?.getContext("2d");
-    if (!ctx) {
-      console.error("Canvas #incomePieChart not found");
-      return;
-    }
 
     new Chart(ctx, {
       type: "pie",
@@ -326,8 +333,19 @@
 }
         
   async function loadExpensesPieChart(uuid) {
+  const ctx = document.getElementById("categoryPieChart")?.getContext("2d");
+  if (!ctx) {
+    console.error("Canvas #categoryPieChart not found");
+    return;
+  }
+
   const res = await fetch(`/api/expenses/${uuid}`);
   const expenses = await res.json();
+
+  if (!expenses.length) {
+    createNoDataChart(ctx, "#8f8f8f");
+    return;
+  }
 
   const labels = expenses.map(e => e.name || "Unbenannt");
 const data = expenses.map(e => parseFloat(e.amount));
@@ -337,11 +355,6 @@ const data = expenses.map(e => parseFloat(e.amount));
     "#e67e22", "#1abc9c", "#34495e", "#95a5a6", "#d35400"
   ];
 
-  const ctx = document.getElementById("categoryPieChart")?.getContext("2d");
-  if (!ctx) {
-    console.error("Canvas #categoryPieChart not found");
-    return;
-  }
 
   new Chart(ctx, {
     type: "pie",
@@ -361,13 +374,117 @@ const data = expenses.map(e => parseFloat(e.amount));
         },
         tooltip: {
           callbacks: {
-            label: ctx => `${ctx.label}: ${currencySymbol}${ctx.raw.toFixed(2)}`
+            label: function(context) {
+              const label = context.label || "Unbenannt";
+              const value = context.raw || 0;
+              return `${label}: ${value.toFixed(2)}€`;
+            }
           }
         }
       }
     }
   });
 }
+
+async function loadTransactionPieChart(user_uuid) {
+  try {
+    const ctx = document.getElementById("transactionPieChart").getContext("2d");
+    if (window.pieChartInstance) window.pieChartInstance.destroy();
+    
+    const txRes = await fetch(`/api/transactions/${user_uuid}`);
+    const transactions = await txRes.json();
+
+    const accRes = await fetch(`/api/accounts/${user_uuid}`);
+    const accounts = await accRes.json();
+
+  if (!transactions.length) {
+    createNoDataChart(ctx, "#717171");
+    return;
+  }
+
+    const accountMap = {};
+    for (const acc of accounts) {
+      accountMap[acc.uuid] = acc.name;
+    }
+
+    const labels = [];
+    const data = [];
+
+    for (const tx of transactions) {
+      const from = accountMap[tx.from_account] || tx.from_account;
+      const to = accountMap[tx.to_account] || tx.to_account;
+      const amount = Number(tx.amount);
+
+      const label = `${to}`;
+      labels.push(label);
+      data.push(amount);
+    }
+
+    const colors = [
+    "#3498db", "#e74c3c", "#2ecc71", "#f1c40f", "#9b59b6",
+    "#e67e22", "#1abc9c", "#34495e", "#95a5a6", "#d35400"
+  ];
+
+
+    window.pieChartInstance = new Chart(ctx, {
+      type: "pie",
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: colors,
+        }],
+      },
+      options: {
+      plugins: {
+        legend: {
+          position: "right"
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+            const index = context.dataIndex;
+            const tx = transactions[index];
+            const from = accountMap[tx.from_account] || tx.from_account;
+            const to = accountMap[tx.to_account] || tx.to_account;
+            const amount = Number(tx.amount).toFixed(2);
+
+            return `${from} → ${to}: ${amount}€`;
+          }
+        }
+        }
+      }
+    }
+    });
+  } catch (err) {
+    console.error("Fehler beim Laden des Pie Charts:", err);
+  }
+}
+
+function createNoDataChart(ctx, color, text = "No data") {
+  new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: [text],
+      datasets: [{
+        data: [1],
+        backgroundColor: [color],
+        borderColor: "#fff",
+        borderWidth: 2
+      }]
+    },
+    options: {
+      plugins: {
+        legend: {position: "right"},
+        tooltip: { callbacks: {
+          title: () => '',
+            label: () => text
+          } },
+      }
+    }
+  });
+}
+
 
   </script>
 </body>

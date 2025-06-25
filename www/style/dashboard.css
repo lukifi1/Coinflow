@@ -109,6 +109,7 @@ body {
   /* Or any desired fixed height */
   width: 100%;
   /* Allow width to be responsive */
+  
 }
 
 .accounts-section {
@@ -286,6 +287,15 @@ body {
 .accounts-section {
   padding-top: 1rem;
 }
+.expenses{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  justify-content: center;
+  border-radius: 12px;
+  padding-bottom: 30px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
 .pie-charts-row {
   display: flex;
   flex-wrap: wrap;
@@ -295,6 +305,7 @@ body {
 
 .pie-chart {
   width: 280px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
 }
+
 
