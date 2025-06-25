@@ -28,7 +28,7 @@
       </aside>
     </section><br><br><br><br>
 
-    <div class="expenses">
+    <div class="chart-section">
       <h3>Expenses by Category</h3><br>
 
   <section class="pie-charts-row">
@@ -47,8 +47,14 @@
     <canvas id="transactionPieChart"></canvas>
   </div>
 </section>
-</div>
+</div><br><br><br>
 
+<section>
+  <div class="chart-section">
+  <h3>Incomes vs Expenses</h3>
+  <canvas id="incomeExpenseBarChart" width="900" height="300"></canvas>
+</div>
+</section>
   </main>
 
   
@@ -99,6 +105,7 @@
           await loadExpensesPieChart(uuid);
           await loadIncomePieChart(uuid);
           await loadTransactionPieChart(uuid);
+          await loadIncomeExpenseBarChart(uuid);
         })();
       }
 
@@ -484,6 +491,113 @@ function createNoDataChart(ctx, color, text = "No data") {
     }
   });
 }
+
+async function loadIncomeExpenseBarChart(uuid) {
+  const [incomeRes, expenseRes] = await Promise.all([
+    fetch(`/api/incomes/${uuid}`),
+    fetch(`/api/expenses/${uuid}`)
+  ]);
+
+  const incomes = await incomeRes.json();
+  const expenses = await expenseRes.json();
+
+  // Statische Beispiel-Daten für Januar bis Mai
+  const staticIncomes = [
+    { month: "January", amount: 1000 },
+    { month: "February", amount: 1200 },
+    { month: "March", amount: 900 },
+    { month: "April", amount: 1100 },
+    { month: "May", amount: 1300 }
+  ];
+
+  const staticExpenses = [
+    { month: "January", amount: 800 },
+    { month: "February", amount: 900 },
+    { month: "March", amount: 950 },
+    { month: "April", amount: 1000 },
+    { month: "May", amount: 1200 }
+  ];
+
+  // Monatsnamen
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  // Hilfsfunktion: kombiniere statische und API-Daten
+  function combineData(staticData, apiData) {
+    const combined = {};
+
+    // Statische Daten einfügen (Januar bis Mai)
+    staticData.forEach(item => {
+      combined[item.month] = parseFloat(item.amount);
+    });
+
+    // API-Daten einfügen, aber nur für Monate ab Juni (Juni bis Dezember)
+    apiData.forEach(item => {
+      if (!combined[item.month] && months.indexOf(item.month) >= 5) {
+        combined[item.month] = parseFloat(item.amount);
+      } else if (months.indexOf(item.month) >= 5) {
+        combined[item.month] += parseFloat(item.amount);
+      }
+    });
+
+    return combined;
+  }
+
+  const incomePerMonth = combineData(staticIncomes, incomes);
+  const expensePerMonth = combineData(staticExpenses, expenses);
+
+  const ctx = document.getElementById("incomeExpenseBarChart")?.getContext("2d");
+  if (!ctx) return;
+
+  new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: "Income",
+          data: months.map(m => incomePerMonth[m] || 0),
+          backgroundColor: "#2ecc71"
+        },
+        {
+          label: "Expenses",
+          data: months.map(m => expensePerMonth[m] || 0),
+          backgroundColor: "#e74c3c"
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Amount in €"
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: "Month"
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(2)}` // currencySymbol falls definiert hinzufügen
+          }
+        }
+      }
+    }
+  });
+}
+
+
+
 
 
   </script>
