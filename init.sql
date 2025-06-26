@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public.incomes (
     amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
     tags TEXT[],
     account_uuid UUID REFERENCES accounts ON DELETE SET NULL,
+    date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     month TEXT
 );
@@ -36,6 +37,7 @@ CREATE TABLE IF NOT EXISTS public.expenses (
     amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
     tags TEXT[],
     account_uuid UUID REFERENCES accounts ON DELETE SET NULL,
+    date DATE DEFAULT CURRENT_DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     month TEXT
 );
@@ -48,8 +50,11 @@ CREATE TABLE IF NOT EXISTS transactions (
   to_account UUID REFERENCES accounts ON DELETE CASCADE,
   amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
   description TEXT,
+  date DATE DEFAULT CURRENT_DATE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+ALTER TABLE transactions ADD COLUMN IF NOT EXISTS date DATE DEFAULT CURRENT_DATE;
 
 CREATE TABLE IF NOT EXISTS public.settings (
     user_uuid UUID PRIMARY KEY REFERENCES users(uuid) ON DELETE CASCADE,

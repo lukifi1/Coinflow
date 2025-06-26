@@ -214,9 +214,7 @@
       <td>${toAccountName}</td>
       <td>${currencySymbol}${parseFloat(transaction.amount).toFixed(2)}</td>
       <td>${transaction.description || '-'}</td>
-      <td>${new Date(transaction.created_at).toLocaleDateString('en-US', {
-                        year: 'numeric', month: 'long', day: 'numeric'
-                    })}</td>
+        <td>${new Date(transaction.date || transaction.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
       <td>
         <button class="delete-btn" data-id="${transaction.uuid}" title="Delete">
           <i class="fas fa-trash-alt"></i>

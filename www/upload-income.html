@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -131,24 +132,24 @@
     }
 
     .form-group select {
-    padding: 12px 14px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    font-size: 14px;
-    width: 100%;
-    background-color: #f9fafc;
-    transition: border-color 0.3s;
-    appearance: none;
-  }
-  
-  .form-group select:focus {
-    border-color: #3498db;
-    outline: none;
-    background-color: #fff;
-  }
+      padding: 12px 14px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      width: 100%;
+      background-color: #f9fafc;
+      transition: border-color 0.3s;
+      appearance: none;
+    }
 
+    .form-group select:focus {
+      border-color: #3498db;
+      outline: none;
+      background-color: #fff;
+    }
   </style>
 </head>
+
 <body>
   <div id="navbar"></div>
   <div class="income-container">
@@ -231,6 +232,7 @@
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
+        transformHeader: header => header.trim().toLowerCase(),
         complete: async (results) => {
           const data = results.data;
 
@@ -247,13 +249,18 @@
               <tr>${Object.values(row).map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody>
           `;
 
-          const payload = data.map(row => ({
-            user_uuid: uuid,
-            name: row.name,
-            amount: parseFloat(row.amount),
-            tags: row.tags ? row.tags.split(",").map(t => t.trim()) : [],
-            account_id: accountId
-          }));
+          const payload = data.map(row => {
+            const formattedDate = row.date ? new Date(row.date).toLocaleDateString('sv-SE') : null;
+
+            return {
+              user_uuid: uuid,
+              name: row.name,
+              amount: parseFloat(row.amount),
+              tags: row.tags ? row.tags.split(",").map(t => t.trim()) : [],
+              account_id: accountId,
+              date: formattedDate,
+            };
+          });
 
           try {
             const res = await fetch("/api/income/bulk", {
@@ -279,4 +286,5 @@
     });
   </script>
 </body>
+
 </html>

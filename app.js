@@ -338,9 +338,9 @@ app.post("/api/income/bulk", async (req, res) => {
 
   const values = [];
   for (const income of incomes) {
-    const { user_uuid, name, amount, tags, account_id } = income;
+    const { user_uuid, name, amount, tags, account_id, date } = income;
 
-    if (!user_uuid || !name || !amount || !account_id || isNaN(amount)) {
+    if (!user_uuid || !name || !amount || !account_id || isNaN(amount) || !date) {
       return res.status(400).json({ error: "Missing or invalid fields in one or more entries" });
     }
 
@@ -348,12 +348,12 @@ app.post("/api/income/bulk", async (req, res) => {
       return res.status(400).json({ error: "Invalid UUID in one or more entries" });
     }
 
-    values.push([user_uuid, name, amount, tags || [], account_id]);
+    values.push([user_uuid, name, amount, tags || [], account_id, date]);
   }
 
   const query = `
-    INSERT INTO incomes (user_uuid, name, amount, tags, account_uuid)
-    VALUES ${values.map((_, i) => `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`).join(",")}
+    INSERT INTO incomes (user_uuid, name, amount, tags, account_uuid, date)
+    VALUES ${values.map((_, i) => `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6})`).join(",")}
     RETURNING *;
   `;
 
@@ -475,9 +475,9 @@ app.post("/api/expense/bulk", async (req, res) => {
 
   const values = [];
   for (const expense of expenses) {
-    const { user_uuid, name, amount, tags, account_id } = expense;
+    const { user_uuid, name, amount, tags, account_id, date } = expense;
 
-    if (!user_uuid || !name || !amount || !account_id || isNaN(amount)) {
+    if (!user_uuid || !name || !amount || !account_id || isNaN(amount) || !date) {
       return res.status(400).json({ error: "Missing or invalid fields in one or more entries" });
     }
 
@@ -485,13 +485,15 @@ app.post("/api/expense/bulk", async (req, res) => {
       return res.status(400).json({ error: "Invalid UUID in one or more entries" });
     }
 
-    values.push([user_uuid, name, amount, tags || [], account_id]);
+    values.push([user_uuid, name, amount, tags || [], account_id, date]);
   }
 
-  const placeholders = values.map((_, i) => `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`).join(",");
+  const placeholders = values
+    .map((_, i) => `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6})`)
+    .join(",");
 
   const query = `
-    INSERT INTO expenses (user_uuid, name, amount, tags, account_uuid)
+    INSERT INTO expenses (user_uuid, name, amount, tags, account_uuid, date)
     VALUES ${placeholders}
     RETURNING *;
   `;
@@ -549,7 +551,7 @@ app.delete("/api/account/:user_uuid/:account_id", async (req, res) => {
 });
 
 app.post("/api/transaction/new", async (req, res) => {
-  const { user_uuid, from_account, to_account, amount, description } = req.body;
+  const { user_uuid, from_account, to_account, amount, description, date } = req.body;
 
   if (!user_uuid || !from_account || !to_account || !amount) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -565,10 +567,10 @@ app.post("/api/transaction/new", async (req, res) => {
 
   try {
     const result = await pool.query(
-      `INSERT INTO transactions (user_uuid, from_account, to_account, amount, description)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO transactions (user_uuid, from_account, to_account, amount, description, date)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [user_uuid, from_account, to_account, amount, description || null]
+      [user_uuid, from_account, to_account, amount, description || null, date || null]
     );
 
     res.status(201).json({ message: "Transaction created", transaction: result.rows[0] });
@@ -586,9 +588,9 @@ app.post("/api/transaction/bulk", async (req, res) => {
 
   const values = [];
   for (const transaction of transactions) {
-    const { user_uuid, from_account, to_account, amount, description } = transaction;
+    const { user_uuid, from_account, to_account, amount, description, date } = transaction;
 
-    if (!user_uuid || !from_account || !to_account || !amount || isNaN(amount)) {
+    if (!user_uuid || !from_account || !to_account || !amount || isNaN(amount) || !date) {
       return res.status(400).json({ error: "Missing or invalid fields in one or more entries" });
     }
 
@@ -596,15 +598,15 @@ app.post("/api/transaction/bulk", async (req, res) => {
       return res.status(400).json({ error: "Invalid UUID in one or more entries" });
     }
 
-    values.push([user_uuid, from_account, to_account, amount, description || null]);
+    values.push([user_uuid, from_account, to_account, amount, description || null, date || null]);
   }
 
-  const placeholders = values.map((_, i) => 
-    `($${i * 5 + 1}, $${i * 5 + 2}, $${i * 5 + 3}, $${i * 5 + 4}, $${i * 5 + 5})`
+  const placeholders = values.map((_, i) =>
+    `($${i * 6 + 1}, $${i * 6 + 2}, $${i * 6 + 3}, $${i * 6 + 4}, $${i * 6 + 5}, $${i * 6 + 6})`
   ).join(",");
 
   const query = `
-    INSERT INTO transactions (user_uuid, from_account, to_account, amount, description)
+    INSERT INTO transactions (user_uuid, from_account, to_account, amount, description, date)
     VALUES ${placeholders}
     RETURNING *;
   `;

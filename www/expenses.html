@@ -31,7 +31,7 @@
 
     <script>
 
-        let currencySymbol = "${currencySymbol}"; // default
+        let currencySymbol = "€"; // default
 
         async function loadUserCurrencySymbol(user_uuid) {
             try {
@@ -216,7 +216,7 @@
     <td><i class="fas fa-arrow-down icon"></i>${expense.name}</td>
     <td>${currencySymbol}-${parseFloat(expense.amount).toFixed(2)}</td>
     <td><span class="tag">${expense.tags?.join(', ') || '-'}</span></td>
-    <td>${new Date(expense.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
+    <td>${new Date(expense.date || expense.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
     <td>${expense.month}</td>
     <td>${accountName}</td>
     <td><button class="delete-btn" data-id="${expense.uuid}" title="Delete"><i class="fas fa-trash-alt"></i></button></td>

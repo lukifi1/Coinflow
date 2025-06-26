@@ -216,7 +216,7 @@
     <td><i class="fas fa-arrow-up icon"></i>${income.name}</td>
     <td>${currencySymbol}${parseFloat(income.amount).toFixed(2)}</td>
     <td><span class="tag">${income.tags?.join(', ') || '-'}</span></td>
-    <td>${new Date(income.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
+    <td>${new Date(income.date || income.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
     <td>${income.month}</td>
     <td>${accountName}</td>
     <td><button class="delete-btn" data-id="${income.uuid}" title="Delete"><i class="fas fa-trash-alt"></i></button></td>

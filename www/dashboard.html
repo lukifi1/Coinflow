@@ -30,26 +30,29 @@
 
     <div class="chart-section">
       <h3>Expenses by Category</h3><br>
-
       <section class="pie-charts-row">
-        <div class="pie-chart">
-          <h4>Income</h4>
-          <canvas id="incomePieChart"></canvas>
-        </div>
-
-        <div class="pie-chart">
-          <h4>Expenses</h4>
-          <canvas id="categoryPieChart"></canvas>
-        </div>
-
-        <div class="pie-chart">
-          <h4>Transactions</h4>
-          <canvas id="transactionPieChart"></canvas>
-        </div>
+        <section class="pie-chart-section income-pie-chart-section">
+          <div class="pie-chart">
+            <h4>Income</h4>
+            <canvas id="incomePieChart"></canvas>
+          </div>
+        </section>
+        <section class="pie-chart-section expenses-pie-chart-section">
+          <div class="pie-chart">
+            <h4>Expenses</h4>
+            <canvas id="categoryPieChart"></canvas>
+          </div>
+        </section>
+        <section class="pie-chart-section transactions-pie-chart-section">
+          <div class="pie-chart">
+            <h4>Transactions</h4>
+            <canvas id="transactionPieChart"></canvas>
+          </div>
+        </section>
       </section>
     </div><br><br><br>
 
-    <section>
+    <section class="bar-chart-section income-expense-bar-chart-section">
       <div class="chart-section">
         <h3>Incomes vs Expenses</h3>
         <canvas id="incomeExpenseBarChart" width="900" height="300"></canvas>
@@ -100,10 +103,12 @@
 
           await loadMonthlyNetChart(uuid);
           await loadDashboardAccounts(uuid);
-          await loadExpensesPieChart(uuid);
-          await loadIncomePieChart(uuid);
+          // Animate pie/bar charts only when visible
+          animateOnView("categoryPieChart", () => loadExpensesPieChart(uuid));
+          animateOnView("incomePieChart", () => loadIncomePieChart(uuid));
+          animateOnView("incomeExpenseBarChart", () => loadIncomeExpenseBarChart(uuid));
+          // Transaction pie chart loads as before (not deferred)
           await loadTransactionPieChart(uuid);
-          await loadIncomeExpenseBarChart(uuid);
         })();
       }
 
@@ -122,20 +127,27 @@
         ];
 
         const monthlyNet = {};
-
-        // Initialize each month to 0
         months.forEach(m => monthlyNet[m] = 0);
 
-        // Don't skip months that have a 0 value!
+        // Use date field if available, fallback to created_at
         incomes.forEach(i => {
-          if (i.month && monthlyNet.hasOwnProperty(i.month)) {
-            monthlyNet[i.month] += parseFloat(i.amount);
+          const effectiveDate = i.date || i.created_at;
+          if (effectiveDate) {
+            const d = new Date(effectiveDate);
+            const monthName = months[d.getMonth()];
+            if (monthlyNet.hasOwnProperty(monthName)) {
+              monthlyNet[monthName] += parseFloat(i.amount);
+            }
           }
         });
-
         expenses.forEach(e => {
-          if (e.month && monthlyNet.hasOwnProperty(e.month)) {
-            monthlyNet[e.month] -= parseFloat(e.amount);
+          const effectiveDate = e.date || e.created_at;
+          if (effectiveDate) {
+            const d = new Date(effectiveDate);
+            const monthName = months[d.getMonth()];
+            if (monthlyNet.hasOwnProperty(monthName)) {
+              monthlyNet[monthName] -= parseFloat(e.amount);
+            }
           }
         });
 
@@ -164,8 +176,6 @@
               borderColor: "#3498db", // fallback
               borderWidth: 2,
               tension: 0.3,
-
-              // Point styling
               pointBackgroundColor: data.map(value =>
                 value < 0 ? "#e74c3c" : value > 0 ? "#2ecc71" : "#3498db"
               ),
@@ -173,8 +183,6 @@
                 value < 0 ? "#e74c3c" : value > 0 ? "#2ecc71" : "#3498db"
               ),
               pointRadius: 4,
-
-              // Segment styling
               segment: {
                 borderColor: ctx => {
                   const i = ctx.p0DataIndex;
@@ -385,6 +393,10 @@
           }]
         },
         options: {
+          animation: {
+            animateRotate: true,
+            animateScale: true
+          },
           plugins: {
             legend: {
               position: "right"
@@ -515,8 +527,10 @@
         const result = {};
         months.forEach(month => result[month] = 0);
         data.forEach(item => {
-          if (months.includes(item.month)) {
-            result[item.month] += parseFloat(item.amount);
+          // Always derive the month from item.date or item.created_at
+          const monthName = new Date(item.date || item.created_at).toLocaleString('en-US', { month: 'long' });
+          if (months.includes(monthName)) {
+            result[monthName] += parseFloat(item.amount);
           }
         });
         return result;
@@ -547,6 +561,10 @@
         },
         options: {
           responsive: true,
+          animation: {
+            duration: 800,
+            easing: "easeOutQuart"
+          },
           scales: {
             y: {
               beginAtZero: true,
@@ -572,11 +590,25 @@
         }
       });
     }
+function animateOnView(canvasId, loadChartFn) {
+      const observer = new IntersectionObserver((entries, obs) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            loadChartFn();
+            obs.unobserve(entry.target);
+          }
+        });
+      }, {
+        root: null,
+        rootMargin: "0px",
+        threshold: 0.3
+      });
 
-
-
-
-
+      const target = document.getElementById(canvasId);
+      if (target) {
+        observer.observe(target);
+      }
+    }
   </script>
 </body>
 

@@ -231,6 +231,7 @@
       Papa.parse(file, {
         header: true,
         skipEmptyLines: true,
+         transformHeader: header => header.trim().toLowerCase(),
         complete: async (results) => {
           const data = results.data;
 
@@ -252,7 +253,9 @@
             name: row.name,
             amount: parseFloat(row.amount),
             tags: row.tags ? row.tags.split(",").map(t => t.trim()) : [],
-            account_id: accountId
+            account_id: accountId,
+            date: row.date,
+            month: row.month
           }));
 
           try {

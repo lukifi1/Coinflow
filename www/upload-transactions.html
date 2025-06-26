@@ -213,15 +213,23 @@
         const fromAccountSelect = document.getElementById("fromAccountSelect");
         const toAccountSelect = document.getElementById("toAccountSelect");
 
+        let accountMap = {};
+        let accountsList = [];
         fetch(`/api/accounts/${uuid}`)
             .then(res => res.json())
             .then(accounts => {
+                accountsList = accounts;
                 if (!Array.isArray(accounts) || accounts.length === 0) {
                     fromAccountSelect.innerHTML = toAccountSelect.innerHTML = '<option value="">No accounts found</option>';
                     fromAccountSelect.disabled = toAccountSelect.disabled = true;
                 } else {
                     const options = accounts.map(a => `<option value="${a.uuid}">${a.name}</option>`).join("");
                     fromAccountSelect.innerHTML = toAccountSelect.innerHTML = options;
+                    // Build accountMap: lowercased trimmed name -> uuid
+                    accountMap = {};
+                    accounts.forEach(acc => {
+                        if (acc.name) accountMap[acc.name.trim().toLowerCase()] = acc.uuid;
+                    });
                 }
             })
             .catch(() => {
@@ -245,6 +253,7 @@
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
+                transformHeader: header => header.trim().toLowerCase(),
                 complete: async (results) => {
                     const data = results.data;
 
@@ -256,18 +265,34 @@
 
                     previewWrapper.style.display = "block";
                     previewTable.innerHTML = `
-        <thead><tr>${Object.keys(data[0]).map(k => `<th>${k}</th>`).join("")}</tr></thead>
-        <tbody>${data.map(row => `
-          <tr>${Object.values(row).map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody>
-      `;
+    <thead><tr>${Object.keys(data[0]).map(k => `<th>${k}</th>`).join("")}</tr></thead>
+    <tbody>${data.map(row => `
+      <tr>${Object.values(row).map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody>
+  `;
 
-                    const payload = data.map(row => ({
-                        user_uuid: uuid,
-                        from_account: fromAccountId,
-                        to_account: toAccountId,
-                        amount: parseFloat(row.amount),
-                        description: row.description || null
-                    }));
+                    // Map CSV account names to UUIDs using accountMap
+                    const payload = data.map(row => {
+                        const formattedDate = row.date ? new Date(row.date).toLocaleDateString('sv-SE') : null; const fromAccountName = row.from?.trim().toLowerCase();
+                        const toAccountName = row.to?.trim().toLowerCase();
+                        return {
+                            user_uuid: uuid,
+                            from_account: accountMap[fromAccountName],
+                            to_account: accountMap[toAccountName],
+                            amount: parseFloat(row.amount),
+                            description: row.description || null,
+                            date: formattedDate
+                        };
+                    });
+
+                    console.log("Parsed payload:", payload);
+
+                    // Validate that all from_account and to_account values exist and amount is valid
+                    const invalidRows = payload.filter(p => !p.from_account || !p.to_account || isNaN(p.amount));
+                    if (invalidRows.length > 0) {
+                        statusMessage.textContent = "Invalid account names or missing amounts in CSV.";
+                        statusMessage.className = "message error";
+                        return;
+                    }
 
                     try {
                         const res = await fetch("/api/transaction/bulk", {
