@@ -60,10 +60,8 @@
 
 
   <script>
+    let currencySymbol = "€"; // default
     document.addEventListener("DOMContentLoaded", () => {
-
-      let currencySymbol = "€"; // default
-
       async function loadUserCurrencySymbol(user_uuid) {
         try {
           const res = await fetch(`/api/settings/${user_uuid}`);
@@ -554,7 +552,7 @@
               beginAtZero: true,
               title: {
                 display: true,
-                text: "Amount in €"
+                text: `Amount in ${currencySymbol}`
               }
             },
             x: {
