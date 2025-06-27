@@ -1,104 +1,194 @@
 <!DOCTYPE html>
+
+
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Coinflow API</title>
-  </head>
-  <body>
-    <h1>API specification for Coinflow</h1>
+<head>
+  <meta charset="UTF-8">
+  <title>CoinFlow API Documentation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h1, h2, h3 {
+      color: #2c3e50;
+    }
+    code, pre {
+      background: #efefef;
+      padding: 4px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    section {
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>CoinFlow API Documentation</h1>
 
-    <h2>Pages</h2>
+
+  <section>
+    <h2>General Information</h2>
+    <ul>
+      <li>Base URL: <code>http://localhost:8080</code></li>
+      <li>All endpoints return data in JSON format unless stated otherwise.</li>
+      <li>All UUIDs must follow valid UUIDv4 format.</li>
+    </ul>
+  </section>
+
+
+  <section>
+    <h2>Table of Contents</h2>
+    <ul>
+      <li><a href="#health-meta">Health & Meta</a></li>
+      <li><a href="#user-management">User Management</a></li>
+      <li><a href="#authentication-sessions">Authentication & Sessions</a></li>
+      <li><a href="#password-reset">Password Reset</a></li>
+      <li><a href="#income-management">Income Management</a></li>
+      <li><a href="#expense-management">Expense Management</a></li>
+      <li><a href="#account-management">Account Management</a></li>
+      <li><a href="#transactions">Transactions</a></li>
+      <li><a href="#user-settings">User Settings</a></li>
+    </ul>
+  </section>
+
+
+  <section id="health-meta">
+    <h2>Health & Meta</h2>
     <h3>GET /</h3>
-    <p>
-      Landing/Main Page<br>
-      Takes in no arguments<br>
-      Returns html file<br>
-      Returns errors as json
-    </p>
-
-    <h2>User Stuff</h2>
-    <p>These are currently usable by everyone, but will at some point require authentication</p>
-    <h3>GET /api/user</h3>
-    <p>
-      Fetch UUID of all users<br>
-      Takes in no arguments<br>
-      Returns UUID as json<br>
-      Returns errors as json
-    </p>
-
-    <h3>POST /api/user/new</h3>
-    <p>
-      Add new user to database<br>
-      Takes username, email and password_hash as json in the body<br>
-      Returns UUID of new user as json<br>
-      Returns errors as json
-    </p>
-
-    <h3>GET /api/user/:uuid</h3>
-    <p>
-      Get user info from database<br>
-      Takes in a UUID in the URI<br>
-      Returns username, email and password_hash as json<br>
-      Returns errors as json
-    </p>
-
-    <h3>PUT /api/user/:uuid</h3>
-    <p>
-      Add new user to database<br>
-      Takes in a UUID in the URI<br>
-      Takes new username, email and password_hash as json in the body<br>
-      Returns updated username, email and password_hash as json<br>
-      Returns errors as json
-    </p>
-
-    <h3>DELETE /api/user/:uuid</h3>
-    <p>
-      Remove user from database<br>
-      Takes in a UUID in the URI<br>
-      Returns deleted username, email and password_hash as json<br>
-      Returns errors as json
-    </p>
-
-    <h3>POST /api/user/login</h3>
-    <p>
-      Create seesion for user<br>
-      Takes in an email and password_hash as json in the body<br>
-      Returns token and uuid as json<br>
-      Returns errors as json
-    </p>
-
-    <h3>POST /api/user/request_password_reset</h3>
-    <p> 
-      Initiate password reset for user<br>
-      Takes in an email as json in the body<br>
-      Creates sessions entry which contains the reset_code, email and expiration<br>
-      Return 200 on success<br>
-      Returns errors as json
-    </p>
-
-    <h3>POST /api/user/reset_password</h3>
-    <p> 
-      Reset password for user<br>
-      Takes in a reset code and new password_hash as json in the body<br>
-      Returns 200 on success<br>
-      Returns errors as json
-    </p>
-
-
-    <h2>Misc</h2>
+    <p>Returns the main landing page (HTML).</p>
     <h3>GET /api</h3>
-    <p>
-      API specification (the document you are looking at right now)<br>
-      Takes in no arguments<br>
-      Returns HTML on success<br>
-      Returns errors as json
-    </p>
-
+    <p>Returns this documentation page (HTML).</p>
     <h3>GET /api/healthcheck</h3>
-    <p>
-      Healthcheck for docker and for whoever wants it<br>
-      Takes in no arguments<br>
-      Returns json
-    </p>
-  </body>
+    <p>Checks database connectivity.</p>
+  </section>
+
+
+  <section id="user-management">
+    <h2>User Management</h2>
+    <h3>GET /api/user</h3>
+    <p>Fetch all user UUIDs.</p>
+    <h3>POST /api/user/new</h3>
+    <pre><code>{
+  "username": "string",
+  "email": "string",
+  "password_hash": "string"
+}</code></pre>
+    <h3>GET /api/user/:uuid</h3>
+    <p>Fetch user info by UUID.</p>
+    <h3>PUT /api/user/:uuid</h3>
+    <p>Update user details. Body: same as <code>/user/new</code>.</p>
+    <h3>DELETE /api/user/:uuid</h3>
+    <p>Delete a user by UUID.</p>
+  </section>
+
+
+  <section id="authentication-sessions">
+    <h2>Authentication & Sessions</h2>
+    <h3>POST /api/user/login</h3>
+    <pre><code>{
+  "email": "string",
+  "password_hash": "string"
+}</code></pre>
+  </section>
+
+
+  <section id="password-reset">
+    <h2>Password Reset</h2>
+    <h3>POST /api/user/request_password_reset</h3>
+    <pre><code>{
+  "email": "string"
+}</code></pre>
+    <h3>POST /api/user/reset_password</h3>
+    <pre><code>{
+  "reset_code": "string",
+  "new_password_hash": "string"
+}</code></pre>
+  </section>
+
+
+  <section id="income-management">
+    <h2>Income Management</h2>
+    <h3>GET /api/incomes/:uuid</h3>
+    <h3>POST /api/income/new</h3>
+    <pre><code>{
+  "user_uuid": "string",
+  "name": "string",
+  "amount": number,
+  "tags": ["string"],
+  "account_id": "string"
+}</code></pre>
+    <h3>POST /api/income/bulk</h3>
+    <p>Array of the above objects.</p>
+    <h3>DELETE /api/income/:user_uuid/:income_id</h3>
+  </section>
+
+
+  <section id="expense-management">
+    <h2>Expense Management</h2>
+    <h3>GET /api/expenses/:uuid</h3>
+    <h3>POST /api/expense/new</h3>
+    <p>Same JSON body as for <code>/income/new</code>.</p>
+    <h3>POST /api/expense/bulk</h3>
+    <p>Array of expense objects.</p>
+    <h3>DELETE /api/expense/:uuid/:expense_id</h3>
+  </section>
+
+
+  <section id="account-management">
+    <h2>Account Management</h2>
+    <h3>GET /api/accounts/:uuid</h3>
+    <h3>POST /api/account/new</h3>
+    <pre><code>{
+  "user_uuid": "string",
+  "name": "string",
+  "balance": number
+}</code></pre>
+    <h3>DELETE /api/account/:user_uuid/:account_id</h3>
+  </section>
+
+
+  <section id="transactions">
+    <h2>Transactions</h2>
+    <h3>GET /api/transactions/:uuid</h3>
+    <h3>POST /api/transaction/new</h3>
+    <pre><code>{
+  "user_uuid": "string",
+  "from_account": "string",
+  "to_account": "string",
+  "amount": number,
+  "description": "string",
+  "date": "ISO 8601 timestamp"
+}</code></pre>
+    <h3>POST /api/transaction/bulk</h3>
+    <p>Array of transaction objects.</p>
+    <h3>DELETE /api/transaction/:uuid/:transaction_id</h3>
+  </section>
+
+
+  <section id="user-settings">
+    <h2>User Settings</h2>
+    <h3>GET /api/settings/:user_uuid</h3>
+    <h3>POST /api/settings/update</h3>
+    <pre><code>{
+  "user_uuid": "string",
+  "currency_symbol": "string"
+}</code></pre>
+  </section>
+
+
+  <section>
+    <h2>Notes</h2>
+    <ul>
+      <li>Error responses are in JSON with a descriptive <code>error</code> message.</li>
+      <li>Sessions and password reset codes are stored in memory (may change in production).</li>
+      <li>UUIDs are validated to prevent malformed queries.</li>
+    </ul>
+  </section>
+
+
+</body>
 </html>

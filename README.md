@@ -9,7 +9,7 @@ You will need docker, docker-compose and docker-buildx. Names of packages can va
 If you have thos, then you only need to run this.
 
 ```bash
-git clone https://gitea.hopeless-cloud.xyz/Coinflow/coinflow.git
+git clone https://github.com/lukifi1/Coinflow.git
 cd coinflow
 docker compose up --build -d
 ```
@@ -17,7 +17,7 @@ docker compose up --build -d
 ## Windows
 
 ```bash
-git clone https://gitea.hopeless-cloud.xyz/Coinflow/coinflow.git
+git clone https://github.com/lukifi1/Coinflow.git
 ```
 Figure out the rest yourself. Some possibilities include using Docker Desktop, cmd or even WSL.
 
