@@ -24,6 +24,10 @@ body {
 }
 
 .dashboard-header h1 span {
+  color: #2c3e50;
+}
+
+.dashboard-header h1 #colored {
   color: #f1c40f;
 }
 
