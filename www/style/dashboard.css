@@ -304,9 +304,71 @@ body {
 }
 
 .pie-chart{
-  width: 270px;
+  width: 250px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.08);
 }
 
+#totalSavingsContainer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 0;
 
+  max-width: 1300px;
+  margin: 0 auto;
+
+  justify-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+  
+}
+
+#totalSavingsContainer > div {
+  width: 150px;    
+  padding: 0.8rem; 
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+  cursor: pointer;
+  user-select: none;
+
+  transition: box-shadow 0.3s ease, transform 0.2s ease;
+  text-align: center;
+}
+
+#totalSavingsContainer > div:hover {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+  transform: translateY(-3px);
+}
+
+
+#totalSavingsContainer h4 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1.2rem;
+  
+}
+
+#totalSavingsContainer p {
+  margin: 0.1rem 0;
+  font-size: 0.95rem;
+  color: #555;
+}
+
+#totalSavingsContainer p:nth-child(2) {
+  color: #27ae60; /* Grün für Income */
+  font-weight: 600;
+}
+
+#totalSavingsContainer p:nth-child(3) {
+  color: #e74c3c; /* Rot für Expenses */
+  font-weight: 600;
+}
+
+#totalSavingsContainer p:nth-child(4) {
+  font-weight: 700;
+  color: #34495e;
+}
 

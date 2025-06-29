@@ -7,6 +7,8 @@
   <title>CoinFlow - Dashboard</title>
   <link rel="stylesheet" href="style/dashboard.css">
   <link rel="stylesheet" href="style/global.css">
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 </head>
 
@@ -15,7 +17,7 @@
 
   <main class="dashboard-main">
     <h2>Hello, <span id="username">User</span> 👋</h2>
-    <p>This is your personal finance dashboard.</p>
+    <p>This is your personal finance dashboard.</p><br><br>
     <section class="dashboard-split">
       <div class="chart-section">
         <h3>Monthly Net</h3>
@@ -57,7 +59,14 @@
         <h3>Incomes vs Expenses</h3>
         <canvas id="incomeExpenseBarChart" width="900" height="300"></canvas>
       </div>
-    </section>
+    </section><br><br><br>
+
+    <div id="totalSavingsDiv">            
+      <section id="totalSavingsSection" >
+      <h3>Total Savings</h3><br>
+      <div id="totalSavingsContainer" ></div>
+      </section>
+      </div>  
   </main>
 
 
@@ -109,6 +118,7 @@
           animateOnView("incomeExpenseBarChart", () => loadIncomeExpenseBarChart(uuid));
           // Transaction pie chart loads as before (not deferred)
           await loadTransactionPieChart(uuid);
+          await loadTotalSavings(uuid);
         })();
       }
 
@@ -609,6 +619,168 @@ function animateOnView(canvasId, loadChartFn) {
         observer.observe(target);
       }
     }
+
+        async function loadTotalSavings(uuid) {
+  const container = document.getElementById("totalSavingsContainer");
+  if (!container) return;
+
+  // Monatsnamen (auf Englisch, kann angepasst werden)
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  try {
+    const [incomeRes, expenseRes] = await Promise.all([
+      fetch(`/api/incomes/${uuid}`),
+      fetch(`/api/expenses/${uuid}`)
+    ]);
+    if (!incomeRes.ok || !expenseRes.ok) {
+      container.textContent = "Failed to load data";
+      return;
+    }
+
+    const incomes = await incomeRes.json();
+    const expenses = await expenseRes.json();
+
+
+    const incomeByMonth = {};
+    const expenseByMonth = {};
+    months.forEach(m => {
+      incomeByMonth[m] = 0;
+      expenseByMonth[m] = 0;
+    });
+
+    incomes.forEach(i => {
+      const date = new Date(i.date || i.created_at);
+      const monthName = months[date.getMonth()];
+      incomeByMonth[monthName] += parseFloat(i.amount);
+    });
+
+    expenses.forEach(e => {
+      const date = new Date(e.date || e.created_at);
+      const monthName = months[date.getMonth()];
+      expenseByMonth[monthName] += parseFloat(e.amount);
+    });
+
+    container.innerHTML = "";
+
+    months.forEach(month => {
+      const income = incomeByMonth[month].toFixed(2);
+      const expense = expenseByMonth[month].toFixed(2);
+      const net = (incomeByMonth[month] - expenseByMonth[month]).toFixed(2);
+
+      const monthDiv = document.createElement("div");
+      monthDiv.style.border = "1px solid #ccc";
+      monthDiv.style.padding = "1rem";
+      monthDiv.style.borderRadius = "8px";
+      monthDiv.style.width = "200px";
+      monthDiv.style.margin = "0.5rem";
+      monthDiv.style.cursor = "pointer";
+      monthDiv.style.userSelect = "none";
+
+      monthDiv.innerHTML = `
+        <h4>${month}</h4>
+        <p>Income: ${currencySymbol}${income}</p>
+        <p>Expenses: ${currencySymbol}${expense}</p>
+        <p>Net: ${currencySymbol}${net}</p>
+      `;
+
+      monthDiv.addEventListener("click", () => {
+        showMonthDetails(month, incomes, expenses);
+      });
+
+      container.appendChild(monthDiv);
+    });
+
+  } catch (err) {
+    container.textContent = "Error loading total savings.";
+    console.error(err);
+  }
+}
+
+
+function showMonthDetails(month, incomes, expenses) {
+  function filterByMonth(data) {
+    return data.filter(item => {
+      const dateStr = item.date || item.created_at;
+      if (!dateStr) return false;
+      const d = new Date(dateStr);
+      return d.toLocaleString('en-US', { month: 'long' }) === month;
+    });
+  }
+
+  const incomesOfMonth = filterByMonth(incomes);
+  const expensesOfMonth = filterByMonth(expenses);
+
+  const totalIncome = incomesOfMonth.reduce((sum, i) => sum + parseFloat(i.amount), 0);
+  const totalExpenses = expensesOfMonth.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+  const totalNet =totalIncome - totalExpenses;
+
+  const modalHtml = `
+  <div id="monthModal" style="
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+  ">
+    <div style="
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    ">
+      <button id="closeMonthModal" style="
+        position: absolute; top: 10px; right: 10px;
+        background: transparent; border: none;
+        font-size: 1.5rem; cursor: pointer;
+      ">×</button>
+
+      <p style="margin-bottom: 20px; font-weight: bold; font-size: 24px;">
+        Details for ${month}
+      </p>
+
+      <h3><strong>Total Net: ${currencySymbol}${totalNet.toFixed(2)}</strong></h3><br>
+      <h3><strong>Total Income: ${currencySymbol}${totalIncome.toFixed(2)}</strong></h3>
+      <ul>
+        ${incomesOfMonth.map(i => `<li>${i.name || "Unbenannt"}: €${parseFloat(i.amount).toFixed(2)}</li>`).join("") || "<li>Keine Einkünfte</li>"}
+      </ul><br>
+
+      <h3><strong>Total Expenses: ${currencySymbol}${totalExpenses.toFixed(2)}</strong></h3>
+      <ul>
+        ${expensesOfMonth.map(e => `<li>${e.name || "Unbenannt"}: ${currencySymbol}${parseFloat(e.amount).toFixed(2)}</li>`).join("") || "<li>Keine Ausgaben</li>"}
+      </ul>
+    </div>
+  </div>
+`;
+
+
+  const modalWrapper = document.createElement("div");
+  modalWrapper.innerHTML = modalHtml;
+  document.body.appendChild(modalWrapper);
+
+  document.getElementById("closeMonthModal").addEventListener("click", () => {
+    modalWrapper.remove();
+  });
+
+  modalWrapper.firstChild.addEventListener("click", e => {
+    if (e.target === modalWrapper.firstChild) modalWrapper.remove();
+  });
+}
+
+// Und zum Initialisieren:
+
+document.addEventListener("DOMContentLoaded", () => {
+  const storage = localStorage.getItem("session_token") ? localStorage : sessionStorage;
+  const uuid = storage.getItem("user_uuid");
+  if (uuid) {
+    loadTotalSavings(uuid);
+  }
+});
+
   </script>
 </body>
 
