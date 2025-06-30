@@ -22,12 +22,6 @@ body {
 .dashboard-header h1 {
   font-size: 28px;
   margin: 0;
-  transition: transform 0.3s ease;
-  cursor: default;
-}
-
-.dashboard-header h1:hover {
-  transform: scale(1.02);
 }
 
 .dashboard-header h1 span {
@@ -51,9 +45,7 @@ body {
   color: white;
   text-decoration: none;
   font-weight: 500;
-  transition: all 0.3s ease;
-  padding: 8px 12px;
-  border-radius: 4px;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .dashboard-header nav ul a:hover {
