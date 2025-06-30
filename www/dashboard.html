@@ -7,8 +7,6 @@
   <title>CoinFlow - Dashboard</title>
   <link rel="stylesheet" href="style/dashboard.css">
   <link rel="stylesheet" href="style/global.css">
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
 </head>
 
@@ -349,7 +347,7 @@
               },
               tooltip: {
                 callbacks: {
-                  label: ctx => `${ctx.label}: €${ctx.raw.toFixed(2)}`
+                  label: ctx => `${ctx.label}: ${currencySymbol}${ctx.raw.toFixed(2)}`
                 }
               }
             }
@@ -416,7 +414,7 @@
                 label: function (context) {
                   const label = context.label || "Unbenannt";
                   const value = context.raw || 0;
-                  return `${label}: ${value.toFixed(2)}€`;
+                  return `${label}: ${value.toFixed(2)}${currencySymbol}`;
                 }
               }
             }
@@ -481,7 +479,7 @@
                   label: function (context) {
                     const label = context.label || "";
                     const value = context.raw || 0;
-                    return `${label}: ${value.toFixed(2)}€`;
+                    return `${label}: ${value.toFixed(2)}${currencySymbol}`;
                   }
                 }
               }
@@ -746,7 +744,7 @@ function showMonthDetails(month, incomes, expenses) {
       <h3><strong>Total Net: ${currencySymbol}${totalNet.toFixed(2)}</strong></h3><br>
       <h3><strong>Total Income: ${currencySymbol}${totalIncome.toFixed(2)}</strong></h3>
       <ul>
-        ${incomesOfMonth.map(i => `<li>${i.name || "Unbenannt"}: €${parseFloat(i.amount).toFixed(2)}</li>`).join("") || "<li>Keine Einkünfte</li>"}
+        ${incomesOfMonth.map(i => `<li>${i.name || "Unbenannt"}: ${currencySymbol}${parseFloat(i.amount).toFixed(2)}</li>`).join("") || "<li>Keine Einkünfte</li>"}
       </ul><br>
 
       <h3><strong>Total Expenses: ${currencySymbol}${totalExpenses.toFixed(2)}</strong></h3>
