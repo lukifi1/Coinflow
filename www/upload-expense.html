@@ -248,15 +248,20 @@
               <tr>${Object.values(row).map(v => `<td>${v}</td>`).join("")}</tr>`).join("")}</tbody>
           `;
 
-          const payload = data.map(row => ({
-            user_uuid: uuid,
-            name: row.name,
-            amount: parseFloat(row.amount),
-            tags: row.tags ? row.tags.split(",").map(t => t.trim()) : [],
-            account_id: accountId,
-            date: row.date,
-            month: row.month
-          }));
+          const payload = data.map(row => {
+            const formattedDate = row.date ? new Date(row.date).toLocaleDateString('sv-SE') : null;
+            const amount = parseFloat(row.amount);
+
+            return {
+              user_uuid: uuid,
+              name: row.name,
+              amount: Math.abs(amount), // Convert negative amounts to positive
+              tags: row.tags ? row.tags.split(",").map(t => t.trim()) : [],
+              account_id: accountId,
+              date: formattedDate,
+              month: row.month
+            };
+          });
 
           try {
             const res = await fetch("/api/expense/bulk", {
