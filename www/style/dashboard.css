@@ -49,8 +49,7 @@ body {
 }
 
 .dashboard-header nav ul a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: translateY(-1px);
+  opacity: 0.8;
 }
 
 #logoutBtn {
