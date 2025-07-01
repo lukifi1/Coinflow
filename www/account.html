@@ -116,8 +116,10 @@
                 const payload = {
                     username,
                     email,
-                    password_hash: hashPassword(password) || ""
+                    password_hash: await hashPassword(password) || ""
                 };
+
+                console.log("Payload to update:", payload);
 
                 try {
                     const res = await fetch(`/api/user/${uuid}`, {
