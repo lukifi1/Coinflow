@@ -325,6 +325,10 @@
                 const aData = extractCellValue(a, key);
                 const bData = extractCellValue(b, key);
 
+                if (key === "created_at") {
+                    return direction === "asc" ? aData - bData : bData - aData;
+                }
+
                 if (typeof aData === "number" && typeof bData === "number") {
                     return direction === "asc" ? aData - bData : bData - aData;
                 }
@@ -340,18 +344,16 @@
 
         function extractCellValue(row, key) {
             switch (key) {
-                case "name":
+                case "from_account":
                     return row.children[1].textContent.trim().toLowerCase();
+                case "to_account":
+                    return row.children[2].textContent.trim().toLowerCase();
                 case "amount":
-                    return parseFloat(row.children[2].textContent.replace(/[^\d.-]/g, ""));
-                case "tags":
-                    return row.children[3].textContent.trim().toLowerCase();
+                    return parseFloat(row.children[3].textContent.replace(/[^\d.-]/g, ""));
+                case "description":
+                    return row.children[4].textContent.trim().toLowerCase();
                 case "created_at":
-                    return new Date(row.children[4].textContent);
-                case "month":
-                    return row.children[5].textContent.trim().toLowerCase();
-                case "account_name":
-                    return row.children[6].textContent.trim().toLowerCase();
+                    return new Date(row.children[5].textContent);
                 default:
                     return "";
             }

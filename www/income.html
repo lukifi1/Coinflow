@@ -93,7 +93,7 @@
                     return;
                 }
 
-                const headers = ["Name", "Amount", "Tags", "Date", "Month", "Account"];
+                const headers = ["Name", "Amount", "Tags", "Date", "Account"];
                 const csvRows = [headers.join(",")];
 
                 rows.forEach(row => {
@@ -101,10 +101,9 @@
                     const amount = row.children[2].textContent.trim().replace(currencySymbol, "");
                     const tags = row.children[3].textContent.trim();
                     const date = row.children[4].textContent.trim();
-                    const month = row.children[5].textContent.trim();
-                    const account = row.children[6].textContent.trim();
+                    const account = row.children[5].textContent.trim();
 
-                    const csvRow = [name, amount, tags, date, month, account]
+                    const csvRow = [name, amount, tags, date, account]
                         .map(value => `"${value.replace(/"/g, '""')}"`) // escape quotes
                         .join(",");
                     csvRows.push(csvRow);
@@ -217,7 +216,6 @@
     <td>${currencySymbol}${parseFloat(income.amount).toFixed(2)}</td>
     <td><span class="tag">${income.tags?.join(', ') || '-'}</span></td>
     <td>${new Date(income.date || income.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
-    <td>${income.month}</td>
     <td>${accountName}</td>
     <td><button class="delete-btn" data-id="${income.uuid}" title="Delete"><i class="fas fa-trash-alt"></i></button></td>
   </tr>`;
@@ -232,7 +230,6 @@
     <th class="sortable" data-key="amount">Amount <i class="fas fa-sort"></i></th>
     <th class="sortable" data-key="tags">Tags <i class="fas fa-sort"></i></th>
     <th class="sortable" data-key="created_at">Date <i class="fas fa-sort"></i></th>
-    <th class="sortable" data-key="month">Month <i class="fas fa-sort"></i></th>
     <th class="sortable" data-key="account_name">Account <i class="fas fa-sort"></i></th>
     <th>Actions</th>
   </tr>
@@ -240,7 +237,7 @@
         <tbody>${rows}</tbody>
         <tfoot>
           <tr>
-            <td colspan="8" class="total-row">Total Income: <span id="totalSum">${currencySymbol}${total.toFixed(2)}</span></td>
+            <td colspan="7" class="total-row">Total Income: <span id="totalSum">${currencySymbol}${total.toFixed(2)}</span></td>
           </tr>
         </tfoot>
       </table>`;
@@ -325,6 +322,10 @@
                 const aData = extractCellValue(a, key);
                 const bData = extractCellValue(b, key);
 
+                if (key === "created_at") {
+                    return direction === "asc" ? aData - bData : bData - aData;
+                }
+
                 if (typeof aData === "number" && typeof bData === "number") {
                     return direction === "asc" ? aData - bData : bData - aData;
                 }
@@ -348,10 +349,8 @@
                     return row.children[3].textContent.trim().toLowerCase();
                 case "created_at":
                     return new Date(row.children[4].textContent);
-                case "month":
-                    return row.children[5].textContent.trim().toLowerCase();
                 case "account_name":
-                    return row.children[6].textContent.trim().toLowerCase();
+                    return row.children[5].textContent.trim().toLowerCase();
                 default:
                     return "";
             }
